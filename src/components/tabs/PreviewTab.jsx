@@ -1,5 +1,5 @@
 import React from "react";
-import { ScanSearch, FileText, Printer } from "lucide-react";
+import { ScanSearch, FileText, Printer, Download, Loader2 } from "lucide-react";
 import { ResumePreview } from "../preview/ResumePreview";
 import { TabInfoBanner } from "../common/TabInfoBanner";
 
@@ -8,14 +8,14 @@ export function PreviewTab({
   pageSize, setPageSize,
   showAtsText, setShowAtsText,
   atsText,
-  handleExportText, handlePrint,
+  handleExportText, handlePrint, handleExportPdf, isExportingPdf,
   previewMeasureRef, pageBreaks
 }) {
   return (
     <div>
       <TabInfoBanner
         title="Preview & Export Purpose"
-        description="Inspect full-size rendered pages with print page-break guides, toggle raw plain-text ATS extraction, export ATS-safe text, or print/save directly as a PDF."
+        description="Inspect full-size rendered pages with print page-break guides, export directly as a PDF document, trigger browser printing, or view/download ATS plain-text."
       />
       <div className="no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
@@ -25,21 +25,25 @@ export function PreviewTab({
           <button type="button" onClick={() => setPageSize("a4")} aria-pressed={pageSize === "a4"}
             style={{ padding: "5px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "1px solid " + (pageSize === "a4" ? "#1e3a5f" : "#e5e7eb"), background: pageSize === "a4" ? "#eaf0f7" : "#fff" }}>A4</button>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button type="button" onClick={() => setShowAtsText(s => !s)} aria-pressed={showAtsText}
-            style={{ display: "flex", alignItems: "center", gap: 6, background: showAtsText ? "#eaf0f7" : "#fff", color: "#1e3a5f", border: "1px solid " + (showAtsText ? "#1e3a5f" : "#d7dbe0"), borderRadius: 7, padding: "9px 16px", fontSize: 13.5, cursor: "pointer" }}>
-            <ScanSearch size={15} aria-hidden="true" /> {showAtsText ? "Hide" : "Show"} what an ATS sees
+            style={{ display: "flex", alignItems: "center", gap: 6, background: showAtsText ? "#eaf0f7" : "#fff", color: "#1e3a5f", border: "1px solid " + (showAtsText ? "#1e3a5f" : "#d7dbe0"), borderRadius: 7, padding: "9px 14px", fontSize: 13.5, cursor: "pointer" }}>
+            <ScanSearch size={15} aria-hidden="true" /> {showAtsText ? "Hide" : "Show"} ATS view
           </button>
-          <button type="button" onClick={handleExportText} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", color: "#1e3a5f", border: "1px solid #1e3a5f", borderRadius: 7, padding: "9px 16px", fontSize: 13.5, cursor: "pointer" }}>
-            <FileText size={15} /> Download ATS-safe .txt
+          <button type="button" onClick={handleExportText} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", color: "#1e3a5f", border: "1px solid #d7dbe0", borderRadius: 7, padding: "9px 14px", fontSize: 13.5, cursor: "pointer" }}>
+            <FileText size={15} /> Download ATS .txt
           </button>
-          <button type="button" onClick={handlePrint} style={{ display: "flex", alignItems: "center", gap: 6, background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 7, padding: "9px 16px", fontSize: 13.5, cursor: "pointer" }}>
-            <Printer size={15} /> Print / save as PDF
+          <button type="button" onClick={handlePrint} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", color: "#1e3a5f", border: "1px solid #1e3a5f", borderRadius: 7, padding: "9px 14px", fontSize: 13.5, cursor: "pointer" }}>
+            <Printer size={15} /> Print
+          </button>
+          <button type="button" onClick={handleExportPdf} disabled={isExportingPdf} style={{ display: "flex", alignItems: "center", gap: 6, background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 7, padding: "9px 16px", fontSize: 13.5, cursor: isExportingPdf ? "wait" : "pointer", opacity: isExportingPdf ? 0.75 : 1 }}>
+            {isExportingPdf ? <Loader2 size={15} style={{ animation: "rb-spin 1s linear infinite" }} /> : <Download size={15} />}
+            {isExportingPdf ? "Exporting PDF..." : "Export PDF"}
           </button>
         </div>
       </div>
       <p className="no-print" style={{ fontSize: 11.5, color: "#9aa1ab", marginTop: -6, marginBottom: 14 }}>
-        In the print dialog, make sure "Background graphics" is turned on so accent colors and dividers show up in the saved PDF. The dashed red line below is an approximate guide to where content spills onto the next page — exact wrapping can shift a little by browser.
+        Click <strong>Export PDF</strong> to download a PDF file directly. If using <strong>Print</strong>, ensure "Background graphics" is enabled in your browser print settings to include theme accent colors.
       </p>
       <div className={showAtsText ? "rb-preview-split" : ""} style={{ display: showAtsText ? "grid" : "block", gridTemplateColumns: showAtsText ? "1fr 1fr" : undefined, gap: 18, alignItems: "start" }}>
         <div style={{ maxWidth: showAtsText ? "none" : (pageSize === "a4" ? 698 : 720), margin: showAtsText ? 0 : "0 auto", position: "relative" }}>

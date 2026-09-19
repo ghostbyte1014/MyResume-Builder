@@ -11,12 +11,12 @@ export function blankResume() {
 
 export function emptyResume() {
   return {
-    name: "Jordan Rivera",
+    name: "John Doe",
     title: "Senior Product Manager",
-    email: "jordan.rivera@email.com",
+    email: "john.doe@email.com",
     phone: "(555) 019-2834",
     location: "Austin, TX",
-    links: "linkedin.com/in/jordanrivera",
+    links: "linkedin.com/in/johndoe",
     summary: "Product manager with 7 years leading cross-functional teams to ship consumer-facing features. Skilled at translating ambiguous problems into shipped roadmaps that move revenue and retention.",
     experience: [
       { id: 1, role: "Senior Product Manager", company: "Northwind Software", dates: "2022 - Present", bullets: [

@@ -4,6 +4,7 @@ import { Info } from "lucide-react";
 export function TabInfoBanner({ title, description }) {
   return (
     <div
+      className="no-print"
       style={{
         display: "flex",
         alignItems: "flex-start",

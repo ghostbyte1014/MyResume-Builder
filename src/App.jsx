@@ -3,9 +3,11 @@ import { ChevronRight, CheckCircle2, XCircle, Eye } from "lucide-react";
 import { CATEGORIES } from "./constants/templatesData";
 import { emptyResume } from "./utils/parser";
 import { resumeToPlainText, downloadTextFile } from "./utils/textExporter";
+import { exportResumePDF } from "./utils/pdfExporter";
 import { analyzeResume, analyzeRequirements } from "./utils/atsAnalyzer";
 
 import { Header } from "./components/common/Header";
+import { Footer } from "./components/common/Footer";
 import { StatusIcon } from "./components/common/StatusIcon";
 import { ResumePreview } from "./components/preview/ResumePreview";
 
@@ -26,7 +28,14 @@ export default function App() {
         const saved = window.localStorage.getItem(DRAFT_STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed && parsed.resume) return parsed.resume;
+          if (parsed && parsed.resume) {
+            if (parsed.resume.name === "Jordan Rivera") {
+              parsed.resume.name = "John Doe";
+              if (parsed.resume.email === "jordan.rivera@email.com") parsed.resume.email = "john.doe@email.com";
+              if (parsed.resume.links === "linkedin.com/in/jordanrivera") parsed.resume.links = "linkedin.com/in/johndoe";
+            }
+            return parsed.resume;
+          }
         }
       } catch (err) {
         // Fallback
@@ -58,6 +67,7 @@ export default function App() {
   const [pageSize, setPageSize] = useState("letter");
   const [showAtsText, setShowAtsText] = useState(false);
   const [documentStyle, setDocumentStyle] = useState("us");
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const [fontSize, setFontSize] = useState(12.5);
   const [lineHeight, setLineHeight] = useState(1.5);
@@ -161,6 +171,24 @@ export default function App() {
     window.print();
   }
 
+  async function handleExportPdf() {
+    const suffix = documentStyle === "intl" ? "cv" : "resume";
+    const filename = (resume.name || suffix).trim().replace(/\s+/g, "_").toLowerCase() + `_${suffix}.pdf`;
+
+    const element = previewMeasureRef.current;
+    if (!element) return;
+
+    try {
+      setIsExportingPdf(true);
+      await exportResumePDF(element, filename, pageSize);
+    } catch (error) {
+      console.error("PDF export failed:", error);
+      alert("Failed to export PDF: " + (error?.message || "Unknown error"));
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }
+
   function handleExportText() {
     const suffix = documentStyle === "intl" ? "cv" : "resume";
     const filename = (resume.name || suffix).trim().replace(/\s+/g, "_").toLowerCase() + `_${suffix}.txt`;
@@ -172,11 +200,22 @@ export default function App() {
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", background: "#f6f7f9", minHeight: "100vh" }} className="rb-root">
       <style>{`
+        @keyframes rb-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
         @media print {
-          @page { size: ${pageSize === "a4" ? "A4" : "letter"}; margin: 0.5in; }
-          .rb-root { background: #fff !important; }
+          @page { size: ${pageSize === "a4" ? "A4" : "letter"}; margin: 0; }
+          html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+          .rb-root { background: #fff !important; margin: 0 !important; padding: 0 !important; }
           .no-print { display: none !important; }
-          .print-only-preview { box-shadow: none !important; border: none !important; max-width: none !important; }
+          .print-only-preview {
+            box-shadow: none !important;
+            border: none !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0.4in !important;
+          }
           .rb-entry { break-inside: avoid; page-break-inside: avoid; }
           .rb-section-title { break-after: avoid; page-break-after: avoid; }
           * {
@@ -356,10 +395,12 @@ export default function App() {
             showAtsText={showAtsText} setShowAtsText={setShowAtsText}
             atsText={atsText}
             handleExportText={handleExportText} handlePrint={handlePrint}
+            handleExportPdf={handleExportPdf} isExportingPdf={isExportingPdf}
             previewMeasureRef={previewMeasureRef} pageBreaks={pageBreaks}
           />
         )}
       </div>
+      <Footer />
     </div>
   );
 }

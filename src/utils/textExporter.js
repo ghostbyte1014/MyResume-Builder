@@ -2,7 +2,7 @@ export function resumeToText(r) {
   if (!r) return "";
   const exp = (r.experience || []).map(e => `${e.role || ""} ${e.company || ""} ${(e.bullets || []).filter(b => b.included).map(b => b.text).join(" ")}`).join(" ");
   const edu = (r.education || []).map(e => `${e.degree || ""} ${e.school || ""}`).join(" ");
-  return [r.title, r.summary, exp, edu, r.skills, r.projects, r.publications, r.certifications].filter(Boolean).join(" ");
+  return [r.title, r.summary, exp, edu, r.skills, r.projects, r.publications, r.certifications, r.languages, r.references].filter(Boolean).join(" ");
 }
 
 export function resumeToPlainText(r) {
@@ -39,6 +39,7 @@ export function resumeToPlainText(r) {
   if (r.skills) { lines.push("SKILLS"); lines.push(r.skills); lines.push(""); }
   if (r.certifications) { lines.push("CERTIFICATIONS"); lines.push(r.certifications); lines.push(""); }
   if (r.languages) { lines.push("LANGUAGES"); lines.push(r.languages); lines.push(""); }
+  if (r.references) { lines.push("REFERENCES"); lines.push(r.references); lines.push(""); }
   return lines.join("\n").trim();
 }
 

@@ -4,7 +4,7 @@ export function blankResume() {
   return {
     name: "", title: "", email: "", phone: "", location: "", links: "",
     summary: "", experience: [], education: [], skills: "", projects: "",
-    publications: "", certifications: "", languages: "", photo: "",
+    publications: "", certifications: "", languages: "", references: "", photo: "",
     photoPosition: { x: 50, y: 50 }, photoAlign: "center", dob: "",
   };
 }
@@ -38,6 +38,7 @@ export function emptyResume() {
     publications: "",
     certifications: "",
     languages: "English (native), Spanish (professional)",
+    references: "",
     photo: "",
     photoPosition: { x: 50, y: 50 },
     photoAlign: "center",
@@ -53,7 +54,8 @@ const IMPORT_SECTION_PATTERNS = {
   projects: /^projects\b/i,
   publications: /^(publications?( ?(&|and) ?grants)?|grants)\b/i,
   certifications: /^(certifications?|licenses?)\b/i,
-  languages: /^languages\b/i,
+  languages: /^languages?\b/i,
+  references: /^(references?|recommendations?)\b/i,
 };
 
 export function matchImportSectionKey(line) {
@@ -155,17 +157,41 @@ export function parseResumeText(text) {
   resume.publications = (sections.publications || []).map(stripBulletMarker).filter(Boolean).join("\n");
   resume.certifications = (sections.certifications || []).filter(Boolean).join(", ");
   resume.languages = (sections.languages || []).filter(Boolean).join(", ");
+  resume.references = (sections.references || []).map(stripBulletMarker).filter(Boolean).join("\n");
+
+  const cleaned = cleanupMixedLanguagesAndReferences(resume);
 
   const summaryCounts = {
-    hasName: !!resume.name,
-    hasContact: !!(resume.email || resume.phone),
-    experienceCount: resume.experience.length,
-    educationCount: resume.education.length,
-    hasSkills: !!resume.skills,
-    hasSummary: !!resume.summary,
+    hasName: !!cleaned.name,
+    hasContact: !!(cleaned.email || cleaned.phone),
+    experienceCount: cleaned.experience.length,
+    educationCount: cleaned.education.length,
+    hasSkills: !!cleaned.skills,
+    hasSummary: !!cleaned.summary,
   };
 
-  return { resume, summaryCounts };
+  return { resume: cleaned, summaryCounts };
+}
+
+export function cleanupMixedLanguagesAndReferences(r) {
+  if (!r || typeof r !== "object") return r;
+  let languages = r.languages || "";
+  let references = r.references || "";
+
+  if (languages) {
+    const match = languages.match(/^(.*?)(?:\s*(?:,|;|\n)?\s*REFERENCES\b\s*:?\s*)(.*)$/is);
+    if (match) {
+      languages = match[1].replace(/[,;\s]+$/, "").trim();
+      const extracted = match[2].trim();
+      references = references ? `${references}\n${extracted}` : extracted;
+    }
+  }
+
+  return {
+    ...r,
+    languages,
+    references
+  };
 }
 
 export function tokenize(text) {

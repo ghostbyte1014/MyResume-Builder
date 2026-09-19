@@ -285,6 +285,7 @@ export function BuildTab({ resume, setResume, documentStyle }) {
       <Field label="Publications & grants (one per line)" value={resume.publications} onChange={v => setResume(r => ({ ...r, publications: v }))} textarea placeholder="Optional — leave blank to hide this section" />
       <Field label="Certifications" value={resume.certifications} onChange={v => setResume(r => ({ ...r, certifications: v }))} />
       <Field label="Languages" value={resume.languages} onChange={v => setResume(r => ({ ...r, languages: v }))} />
+      <Field label="References" value={resume.references} onChange={v => setResume(r => ({ ...r, references: v }))} textarea placeholder="Optional — e.g. 'Available upon request' or specific referee contact details" />
     </div>
   );
 }

@@ -185,6 +185,8 @@ export function ResumePreview({
           <SectionTitle>Education</SectionTitle>
           <EducationBlock />
           {resume.publications && <><SectionTitle>Publications</SectionTitle><PublicationsBlock /></>}
+          {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
+          {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
         </div>
       </div>
     );
@@ -205,6 +207,9 @@ export function ResumePreview({
         {resume.publications && <><SectionTitle>Publications</SectionTitle><PublicationsBlock /></>}
         <SectionTitle>Skills</SectionTitle>
         <SkillsBlock />
+        {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
+        {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
+        {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
       </div>
     );
   }
@@ -224,6 +229,8 @@ export function ResumePreview({
         <SectionTitle>Skills</SectionTitle>
         <SkillsBlock />
         {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
+        {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
+        {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
       </div>
     );
   }
@@ -242,6 +249,8 @@ export function ResumePreview({
         <SectionTitle>Education</SectionTitle>
         <EducationBlock />
         {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
+        {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
+        {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
       </div>
     );
   }
@@ -261,6 +270,8 @@ export function ResumePreview({
         <SectionTitle>Skills</SectionTitle>
         <SkillsBlock />
         {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
+        {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
+        {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
       </div>
     );
   }
@@ -280,6 +291,8 @@ export function ResumePreview({
       <SectionTitle>Skills</SectionTitle>
       <SkillsBlock />
       {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
+      {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
+      {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
     </div>
   );
 }

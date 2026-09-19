@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronRight, CheckCircle2, XCircle, Eye } from "lucide-react";
 import { CATEGORIES } from "./constants/templatesData";
-import { emptyResume } from "./utils/parser";
+import { emptyResume, cleanupMixedLanguagesAndReferences } from "./utils/parser";
 import { resumeToPlainText, downloadTextFile } from "./utils/textExporter";
 import { exportResumePDF } from "./utils/pdfExporter";
 import { analyzeResume, analyzeRequirements } from "./utils/atsAnalyzer";
@@ -34,7 +34,7 @@ export default function App() {
               if (parsed.resume.email === "jordan.rivera@email.com") parsed.resume.email = "john.doe@email.com";
               if (parsed.resume.links === "linkedin.com/in/jordanrivera") parsed.resume.links = "linkedin.com/in/johndoe";
             }
-            return parsed.resume;
+            return cleanupMixedLanguagesAndReferences(parsed.resume);
           }
         }
       } catch (err) {

@@ -16,7 +16,28 @@ export function Header({ tab, setTab, isAiLoading = false }) {
   return (
     <div className="no-print" style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "14px 24px" }}>
       <div className="rb-header-inner" style={{ maxWidth: 1180, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <button
+          type="button"
+          onClick={() => !isAiLoading && setTab("design")}
+          disabled={isAiLoading}
+          title="Go to Home (Templates)"
+          aria-label="MyResume Builder Home"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            background: "none",
+            border: "none",
+            padding: "4px 8px",
+            margin: "-4px -8px",
+            borderRadius: 8,
+            textAlign: "left",
+            cursor: isAiLoading ? "not-allowed" : "pointer",
+            transition: "background 0.15s ease",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+        >
           <ResumeIcon size={34} />
           <div>
             <div style={{ fontWeight: 700, fontSize: 17.5, color: "#0f172a" }}>
@@ -26,7 +47,7 @@ export function Header({ tab, setTab, isAiLoading = false }) {
               Tailored Templates · Smart ATS Review · AI Career Advisor · Version History
             </div>
           </div>
-        </div>
+        </button>
         <div className="rb-tabs" style={{ display: "flex", gap: 4 }}>
           {tabs.map(t => (
             <button

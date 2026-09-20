@@ -280,16 +280,22 @@ export function parseProjectsSection(lines) {
 
 export function parseReferencesSection(lines) {
   if (!lines || !lines.length) return "";
+  const inputLines = typeof lines === "string" ? lines.split(/\r?\n/) : lines;
 
   const refBlocks = [];
   let currentBlock = [];
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = stripBulletMarker(lines[i]);
+  for (let i = 0; i < inputLines.length; i++) {
+    const line = stripBulletMarker(inputLines[i]);
     if (!line) continue;
 
-    const isHeaderLine = line.startsWith("[") || /reference\s*\d+/i.test(line);
-    if (isHeaderLine && currentBlock.length > 0) {
+    const isSubFieldHeader = /^\[?(?:title|position|organization|company|email|phone|contact)\b/i.test(line);
+    const isNewRefHeader = !isSubFieldHeader && (
+      /^(?:\[?reference\s*(?:name)?\s*\d*\]?|\[?ref\s*\d*\]?|\[?name\s*\d*\]?)/i.test(line) ||
+      (currentBlock.length >= 3 && (/^\[[A-Z]/.test(line) || (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/.test(line) && !line.includes("@"))))
+    );
+
+    if (isNewRefHeader && currentBlock.length > 0) {
       refBlocks.push(currentBlock.join("\n"));
       currentBlock = [];
     }

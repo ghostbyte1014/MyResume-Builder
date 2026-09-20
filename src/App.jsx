@@ -254,7 +254,7 @@ export default function App() {
         {tab !== "preview" && (
           <div className="no-print" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
             {tab === "import" && <ImportTab setResume={setResume} setTab={setTab} />}
-            {tab === "build" && <BuildTab resume={resume} setResume={setResume} documentStyle={documentStyle} />}
+            {tab === "build" && <BuildTab resume={resume} setResume={setResume} documentStyle={documentStyle} categoryId={categoryId} />}
             {tab === "design" && (
               <TemplatesTab
                 documentStyle={documentStyle} pickDocumentStyle={pickDocumentStyle}

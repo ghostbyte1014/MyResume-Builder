@@ -3,8 +3,11 @@ import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown, Zap, AlignLeft, Ali
 import { Field } from "../common/Field";
 import { WEAK_VERB_MAP } from "../../constants/dictionary";
 import { TabInfoBanner } from "../common/TabInfoBanner";
+import { parseReferencesSection } from "../../utils/parser";
+import { CATEGORY_EXAMPLES } from "../../constants/categoryExamples";
 
-export function BuildTab({ resume, setResume, documentStyle }) {
+export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech" }) {
+  const ex = CATEGORY_EXAMPLES[categoryId] || CATEGORY_EXAMPLES.tech;
   function updateExp(id, field, value) {
     setResume(r => ({ ...r, experience: r.experience.map(e => e.id === id ? { ...e, [field]: value } : e) }));
   }
@@ -97,20 +100,37 @@ export function BuildTab({ resume, setResume, documentStyle }) {
     if (Array.isArray(val)) {
       return val.map((item, idx) => typeof item === "string" ? { id: idx + 1, text: item } : (item.id ? item : { ...item, id: idx + 1 }));
     }
-    if (!val || typeof val !== "string") return [];
-    return val
-      .split(delimiter)
+    if (!val && val !== "") return [];
+    let text = typeof val === "string" ? val : "";
+    if (delimiter === "\n\n" && text && !text.includes("\n\n") && text.includes("\n")) {
+      text = parseReferencesSection(text);
+    }
+    if (!text && text !== "") return [];
+
+    let parts = [];
+    if (delimiter === "," || delimiter === ", ") {
+      parts = text.split(",");
+    } else {
+      parts = text.split(delimiter);
+    }
+
+    return parts
       .map(line => line.replace(/^[•\-*●▪]\s*/, "").trim())
-      .filter(Boolean)
       .map((text, idx) => ({ id: idx + 1, text }));
   }
 
   function updateListField(fieldKey, items, joinDelimiter = "\n") {
     const textValue = items
-      .map(it => (typeof it === "string" ? it : it.text || ""))
-      .filter(Boolean)
-      .join(joinDelimiter);
-    setResume(r => ({ ...r, [fieldKey]: textValue }));
+      .map(it => (typeof it === "string" ? it : (it.text !== undefined ? it.text : "")))
+      .join(joinDelimiter === ", " || joinDelimiter === "," ? ", " : joinDelimiter);
+
+    let result = textValue;
+    if (items.length > 0 && items[items.length - 1].text === "") {
+      if (!result.endsWith(" ") && !result.endsWith("\n")) {
+        result += (joinDelimiter === ", " || joinDelimiter === "," ? " " : "\n");
+      }
+    }
+    setResume(r => ({ ...r, [fieldKey]: result }));
   }
 
   function addListItem(fieldKey, defaultText = "", delimiter = "\n") {
@@ -352,18 +372,18 @@ export function BuildTab({ resume, setResume, documentStyle }) {
       {/* SKILLS */}
       <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         Skills & Competencies
-        <button type="button" onClick={() => addListItem("skills", "", ", ")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
+        <button type="button" onClick={() => addListItem("skills", "", resume.skills?.includes("\n") ? "\n" : ", ")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
           <Plus size={13} /> Add skill
         </button>
       </h3>
-      {parseListItems(resume.skills, resume.skills?.includes("\n") ? "\n" : ",").map((item, idx, arr) => (
+      {parseListItems(resume.skills, resume.skills?.includes("\n") ? "\n" : ", ").map((item, idx, arr) => (
         <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
           <button type="button" onClick={() => moveListItem("skills", idx, idx - 1, resume.skills?.includes("\n") ? "\n" : ", ")} disabled={idx === 0} style={{ background: "none", border: "none", padding: 1, cursor: idx === 0 ? "default" : "pointer", color: idx === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={13} /></button>
           <button type="button" onClick={() => moveListItem("skills", idx, idx + 1, resume.skills?.includes("\n") ? "\n" : ", ")} disabled={idx === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: idx === arr.length - 1 ? "default" : "pointer", color: idx === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={13} /></button>
           <input
             value={item.text}
             onChange={e => updateListItem("skills", item.id, e.target.value, resume.skills?.includes("\n") ? "\n" : ", ")}
-            placeholder="e.g. Programming Languages: HTML, CSS, JavaScript"
+            placeholder={ex.skillsPlaceholder}
             style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit" }}
           />
           <button type="button" onClick={() => removeListItem("skills", item.id, resume.skills?.includes("\n") ? "\n" : ", ")} aria-label="Remove skill" style={{ background: "none", border: "none", cursor: "pointer", color: "#b0392f", padding: 4 }}>
@@ -403,7 +423,7 @@ export function BuildTab({ resume, setResume, documentStyle }) {
               value={item.text}
               onChange={e => updateListItem("projects", item.id, e.target.value, "\n\n")}
               rows={4}
-              placeholder="e.g. DYCI Connect — Institutional Hub&#10;Tech Stack: React, Supabase&#10;• Developed centralized management platform..."
+              placeholder={ex.projectsPlaceholder}
               style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
             />
             <button type="button" onClick={() => removeListItem("projects", item.id, "\n\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -427,7 +447,7 @@ export function BuildTab({ resume, setResume, documentStyle }) {
           <input
             value={item.text}
             onChange={e => updateListItem("publications", item.id, e.target.value, "\n")}
-            placeholder="e.g. Research Paper Title, Journal Name, 2025"
+            placeholder={ex.publicationsPlaceholder}
             style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit" }}
           />
           <button type="button" onClick={() => removeListItem("publications", item.id, "\n")} aria-label="Remove publication" style={{ background: "none", border: "none", cursor: "pointer", color: "#b0392f", padding: 4 }}>
@@ -450,7 +470,7 @@ export function BuildTab({ resume, setResume, documentStyle }) {
           <input
             value={item.text}
             onChange={e => updateListItem("certifications", item.id, e.target.value, "\n")}
-            placeholder="e.g. Microsoft Office Specialist: Word 2019 Associate — Microsoft — Feb 2025"
+            placeholder={ex.certificationsPlaceholder}
             style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit" }}
           />
           <button type="button" onClick={() => removeListItem("certifications", item.id, "\n")} aria-label="Remove certification" style={{ background: "none", border: "none", cursor: "pointer", color: "#b0392f", padding: 4 }}>
@@ -473,7 +493,7 @@ export function BuildTab({ resume, setResume, documentStyle }) {
           <input
             value={item.text}
             onChange={e => updateListItem("languages", item.id, e.target.value, "\n")}
-            placeholder="e.g. English — Conversational Proficiency"
+            placeholder={ex.languagesPlaceholder}
             style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit" }}
           />
           <button type="button" onClick={() => removeListItem("languages", item.id, "\n")} aria-label="Remove language" style={{ background: "none", border: "none", cursor: "pointer", color: "#b0392f", padding: 4 }}>
@@ -489,7 +509,7 @@ export function BuildTab({ resume, setResume, documentStyle }) {
           <Plus size={13} /> Add reference
         </button>
       </h3>
-      {parseListItems(resume.references, resume.references?.includes("\n\n") ? "\n\n" : "\n").map((item, refIndex, arr) => (
+      {parseListItems(resume.references, "\n\n").map((item, refIndex, arr) => (
         <div key={item.id}
           draggable
           onDragStart={ev => {
@@ -500,23 +520,23 @@ export function BuildTab({ resume, setResume, documentStyle }) {
           onDrop={ev => {
             const raw = ev.dataTransfer.getData("application/x-ref-index");
             if (raw === "") return;
-            moveListItem("references", Number(raw), refIndex, resume.references?.includes("\n\n") ? "\n\n" : "\n");
+            moveListItem("references", Number(raw), refIndex, "\n\n");
           }}
           style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 10, marginBottom: 10, background: "#fafbfc" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 4 }}>
               <span className="rb-drag-handle" aria-hidden="true" title="Drag to reorder" style={{ cursor: "grab", color: "#9aa1ab" }}><GripVertical size={16} /></span>
-              <button type="button" onClick={() => moveListItem("references", refIndex, refIndex - 1, resume.references?.includes("\n\n") ? "\n\n" : "\n")} disabled={refIndex === 0} style={{ background: "none", border: "none", padding: 1, cursor: refIndex === 0 ? "default" : "pointer", color: refIndex === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={14} /></button>
-              <button type="button" onClick={() => moveListItem("references", refIndex, refIndex + 1, resume.references?.includes("\n\n") ? "\n\n" : "\n")} disabled={refIndex === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: refIndex === arr.length - 1 ? "default" : "pointer", color: refIndex === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={14} /></button>
+              <button type="button" onClick={() => moveListItem("references", refIndex, refIndex - 1, "\n\n")} disabled={refIndex === 0} style={{ background: "none", border: "none", padding: 1, cursor: refIndex === 0 ? "default" : "pointer", color: refIndex === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={14} /></button>
+              <button type="button" onClick={() => moveListItem("references", refIndex, refIndex + 1, "\n\n")} disabled={refIndex === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: refIndex === arr.length - 1 ? "default" : "pointer", color: refIndex === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={14} /></button>
             </div>
             <textarea
               value={item.text}
-              onChange={e => updateListItem("references", item.id, e.target.value, resume.references?.includes("\n\n") ? "\n\n" : "\n")}
-              rows={3}
-              placeholder="e.g. Jane Smith — IT Director, Tech Corp&#10;Email: jane@tech.com | Phone: +63 900 000 0000"
+              onChange={e => updateListItem("references", item.id, e.target.value, "\n\n")}
+              rows={4}
+              placeholder={ex.referencesPlaceholder}
               style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
             />
-            <button type="button" onClick={() => removeListItem("references", item.id, resume.references?.includes("\n\n") ? "\n\n" : "\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+            <button type="button" onClick={() => removeListItem("references", item.id, "\n\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
               <Trash2 size={14} /> Remove
             </button>
           </div>

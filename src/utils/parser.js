@@ -1,4 +1,9 @@
-import { STOPWORDS } from "../constants/dictionary";
+import { STOPWORDS } from "../constants/dictionary.js";
+
+export const DEFAULT_SECTION_ORDER = [
+  "summary", "experience", "projects", "education", "skills",
+  "certifications", "publications", "languages", "references"
+];
 
 export function blankResume() {
   return {
@@ -6,6 +11,7 @@ export function blankResume() {
     summary: "", experience: [], education: [], skills: "", projects: "",
     publications: "", certifications: "", languages: "", references: "", photo: "",
     photoPosition: { x: 50, y: 50 }, photoAlign: "center", dob: "",
+    sectionOrder: [...DEFAULT_SECTION_ORDER]
   };
 }
 
@@ -43,32 +49,74 @@ export function emptyResume() {
     photoPosition: { x: 50, y: 50 },
     photoAlign: "center",
     dob: "",
+    sectionOrder: [...DEFAULT_SECTION_ORDER]
   };
 }
 
-const IMPORT_SECTION_PATTERNS = {
-  summary: /^(summary|profile|objective|about( me)?)\b/i,
-  experience: /^(experience|work experience|employment( history)?|professional experience)\b/i,
-  education: /^education\b/i,
-  skills: /^(skills|technical skills|core competencies)\b/i,
-  projects: /^projects\b/i,
-  publications: /^(publications?( ?(&|and) ?grants)?|grants)\b/i,
-  certifications: /^(certifications?|licenses?)\b/i,
-  languages: /^languages?\b/i,
-  references: /^(references?|recommendations?)\b/i,
+const EXPANDED_SECTION_PATTERNS = {
+  summary: [
+    /^(professional summary|executive summary|career summary|summary|profile|objective|career objective|about( me)?|personal statement|summary of qualifications)\s*:?$/i
+  ],
+  experience: [
+    /^(experience|work experience|employment( history)?|professional experience|work history|career history|relevant experience|positions held|where i worked)\s*:?$/i
+  ],
+  education: [
+    /^(education|academic background|academic qualifications|academic history|education & training|education & qualifications|degrees & education)\s*:?$/i
+  ],
+  skills: [
+    /^(skills|skills & competencies|technical skills|core competencies|skills & abilities|key skills|skills & tools|technical competencies|soft skills|tech stack|tools & technologies|technical proficiencies|areas of expertise)\s*:?$/i
+  ],
+  projects: [
+    /^(projects|featured projects|personal projects|academic projects|key projects|projects & portfolio|selected works|what i built)\s*:?$/i
+  ],
+  publications: [
+    /^(publications?( ?(&|and) ?grants)?|grants|research|publications & research|awards & honors|patents)\s*:?$/i
+  ],
+  certifications: [
+    /^(certifications?|licenses?|certifications? & licenses?|professional certifications?|credentials|courses & certifications?)\s*:?$/i
+  ],
+  languages: [
+    /^(languages?|languages? spoken|language proficiency|foreign languages)\s*:?$/i
+  ],
+  references: [
+    /^(references?|recommendations?|referees?|professional references)\s*:?$/i
+  ]
 };
 
+function cleanHtmlAndLine(l) {
+  if (!l) return "";
+  return l
+    .replace(/<[^>]+>/g, "")
+    .replace(/^SECTION_HEADER:\s*/i, "")
+    .replace(/^SUBHEADER:\s*/i, "")
+    .replace(/^[-•*●▪]\s*/, "")
+    .replace(/^\d+[.)]\s*/, "")
+    .replace(/:$/, "")
+    .trim();
+}
+
 export function matchImportSectionKey(line) {
-  if (!line || line.length > 40) return null;
-  const clean = line.replace(/:$/, "").trim();
-  for (const [key, re] of Object.entries(IMPORT_SECTION_PATTERNS)) {
-    if (re.test(clean)) return key;
+  if (!line) return null;
+  const clean = cleanHtmlAndLine(line);
+  if (!clean || clean.length > 60) return null;
+
+  for (const [key, patterns] of Object.entries(EXPANDED_SECTION_PATTERNS)) {
+    for (const pat of patterns) {
+      if (pat.test(clean)) return key;
+    }
   }
+
   return null;
 }
 
 export function stripBulletMarker(line) {
-  return line.replace(/^[-•*●▪]\s*/, "").replace(/^\d+[.)]\s*/, "").trim();
+  if (!line) return "";
+  return line
+    .replace(/^SUBHEADER:\s*/i, "")
+    .replace(/^SECTION_HEADER:\s*/i, "")
+    .replace(/^[-•*●▪]\s*/, "")
+    .replace(/^\d+[.)]\s*/, "")
+    .trim();
 }
 
 export function splitIntoParagraphs(lines) {
@@ -103,19 +151,188 @@ export function parseExperienceSection(lines) {
 }
 
 export function parseEducationSection(lines) {
-  return splitIntoParagraphs(lines).map((para, i) => {
-    const { dates, rest } = extractDateRange(para.join(" "));
-    const parts = rest.split(/,| - /).map(s => s && s.trim()).filter(Boolean);
-    return { id: Date.now() + i * 10 + 500000, degree: parts[0] || rest, school: parts.slice(1).join(", ") || "", dates };
+  if (!lines || !lines.length) return [];
+
+  const blocks = splitIntoParagraphs(lines);
+  const finalEntries = [];
+
+  for (const block of blocks) {
+    let currentEntryLines = [];
+    for (let i = 0; i < block.length; i++) {
+      const line = stripBulletMarker(block[i]);
+      if (!line) continue;
+
+      const hasDates = !!extractDateRange(line).dates;
+      const isSchoolOrDegree = /college|university|school|institute|academy|bachelor|master|doctor|phd|b\.?s|m\.?s|b\.?a|m\.?a|associate|diploma|high\s*school|senior|junior/i.test(line);
+
+      const currentHasDates = currentEntryLines.some(l => !!extractDateRange(l).dates);
+
+      if (currentEntryLines.length > 0 && currentHasDates && isSchoolOrDegree) {
+        finalEntries.push(currentEntryLines);
+        currentEntryLines = [line];
+      } else {
+        currentEntryLines.push(line);
+      }
+    }
+    if (currentEntryLines.length) {
+      finalEntries.push(currentEntryLines);
+    }
+  }
+
+  return finalEntries.map((para, i) => {
+    let degree = "";
+    let school = "";
+    let dates = "";
+
+    for (const rawLine of para) {
+      const line = stripBulletMarker(rawLine);
+      const dateInfo = extractDateRange(line);
+
+      if (dateInfo.dates && !dates) {
+        dates = dateInfo.dates;
+        const rest = dateInfo.rest.replace(/^[|–—-\s]+|[|–—-\s]+$/g, "").trim();
+        if (rest && !/expected\s*graduation/i.test(rest)) {
+          if (!degree && /high\s*school|senior|degree|bachelor|master|phd|associate|diploma|b\.?s|m\.?s/i.test(rest)) {
+            degree = rest;
+          } else if (!school && /college|university|school|institute|academy/i.test(rest)) {
+            school = rest;
+          } else if (!degree) {
+            degree = rest;
+          }
+        } else if (rest && /expected\s*graduation/i.test(rest)) {
+          dates += ` | ${rest}`;
+        }
+      } else {
+        if (/college|university|school|institute|academy/i.test(line)) {
+          if (!school) school = line;
+          else if (!degree) degree = line;
+        } else if (/bachelor|master|doctor|phd|b\.?s|m\.?s|b\.?a|m\.?a|associate|diploma|degree|high\s*school|senior|junior/i.test(line)) {
+          if (!degree) degree = line;
+          else if (!school) school = line;
+        } else {
+          if (!degree) degree = line;
+          else if (!school) school = line;
+        }
+      }
+    }
+
+    return {
+      id: Date.now() + i * 10 + 500000,
+      degree: degree || para[0] || "",
+      school: school || (para[1] && para[1] !== degree ? para[1] : ""),
+      dates: dates || ""
+    };
   });
 }
 
+export function parseProjectsSection(lines) {
+  if (!lines || !lines.length) return "";
+
+  const projectBlocks = [];
+  let currentBlock = [];
+  let pendingCategory = "";
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const clean = stripBulletMarker(rawLine);
+    if (!clean) continue;
+
+    const isCategoryHeader = /^[A-Z0-9\s/&|-]{4,45}$/.test(clean) &&
+      !clean.includes(":") &&
+      !clean.includes("—") &&
+      !clean.startsWith("-") &&
+      !clean.startsWith("•") &&
+      !/tech\s*stack|url|github|live|developed|built|created|implemented|focused/i.test(clean);
+
+    if (isCategoryHeader) {
+      if (currentBlock.length) {
+        projectBlocks.push(currentBlock.join("\n"));
+        currentBlock = [];
+      }
+      pendingCategory = clean;
+      continue;
+    }
+
+    const isBulletOrTech = rawLine.startsWith("-") || rawLine.startsWith("•") || /^(tech\s*stack|github|live|url|link):/i.test(clean);
+    const isTitle = !isBulletOrTech && (
+      clean.includes("—") || clean.includes("-") || clean.includes("(") || currentBlock.length === 0
+    );
+
+    if (isTitle && currentBlock.length > 0 && !isBulletOrTech) {
+      projectBlocks.push(currentBlock.join("\n"));
+      currentBlock = [];
+    }
+
+    if (currentBlock.length === 0 && pendingCategory) {
+      currentBlock.push(`[${pendingCategory}] ${clean}`);
+      pendingCategory = "";
+    } else {
+      currentBlock.push(rawLine.startsWith("-") || rawLine.startsWith("•") ? `• ${clean}` : clean);
+    }
+  }
+
+  if (currentBlock.length) {
+    projectBlocks.push(currentBlock.join("\n"));
+  }
+
+  return projectBlocks.join("\n\n");
+}
+
+export function parseReferencesSection(lines) {
+  if (!lines || !lines.length) return "";
+
+  const refBlocks = [];
+  let currentBlock = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = stripBulletMarker(lines[i]);
+    if (!line) continue;
+
+    const isHeaderLine = line.startsWith("[") || /reference\s*\d+/i.test(line);
+    if (isHeaderLine && currentBlock.length > 0) {
+      refBlocks.push(currentBlock.join("\n"));
+      currentBlock = [];
+    }
+    currentBlock.push(line);
+  }
+
+  if (currentBlock.length) {
+    refBlocks.push(currentBlock.join("\n"));
+  }
+
+  return refBlocks.join("\n\n");
+}
+
+export function prepareInputLines(rawTextOrHtml) {
+  if (!rawTextOrHtml) return [];
+  let text = rawTextOrHtml;
+  if (/<[a-z][\s\S]*>/i.test(text)) {
+    text = text.replace(/<h[1-6][^>]*>/gi, "\n").replace(/<\/h[1-6]>/gi, "\n");
+    text = text.replace(/<p[^>]*>/gi, "\n").replace(/<\/p>/gi, "\n");
+    text = text.replace(/<ul[^>]*>/gi, "\n").replace(/<\/ul>/gi, "\n");
+    text = text.replace(/<li[^>]*>/gi, "\n- ").replace(/<\/li>/gi, "\n");
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+    text = text.replace(/<[^>]+>/g, "");
+    text = text
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, " ");
+  }
+  return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+}
+
 export function parseResumeText(text) {
-  const lines = text.split(/\r?\n/).map(l => l.trim());
+  const lines = prepareInputLines(text);
   const resume = blankResume();
+  if (!lines.length) return { resume, summaryCounts: { hasName: false } };
+
+  const fullText = lines.join("\n");
+
   let idx = 0;
-  while (idx < lines.length && !lines[idx]) idx++;
-  resume.name = lines[idx] || "";
+  resume.name = cleanHtmlAndLine(lines[idx]);
   idx++;
 
   let contactLines = [];
@@ -125,19 +342,26 @@ export function parseResumeText(text) {
     if (matchImportSectionKey(l)) break;
     contactLines.push(l);
     idx++;
-    if (contactLines.length >= 4) break;
+    if (contactLines.length >= 5) break;
   }
 
-  if (contactLines.length && !/@/.test(contactLines[0]) && !/\d{3}/.test(contactLines[0]) && contactLines[0].length < 60) {
-    resume.title = contactLines[0];
+  if (contactLines.length && !/@/.test(contactLines[0]) && !/\d{3}/.test(contactLines[0]) && contactLines[0].length < 80) {
+    resume.title = cleanHtmlAndLine(contactLines[0]);
     contactLines = contactLines.slice(1);
   }
+
   const contactText = contactLines.join(" | ");
-  resume.email = (contactText.match(/[\w.+-]+@[\w-]+\.[\w.-]+/) || [""])[0];
-  resume.phone = (contactText.match(/(\+?\d[\d\s().-]{7,}\d)/) || [""])[0];
-  const linkMatch = contactText.match(/((https?:\/\/)?(www\.)?(linkedin\.com|github\.com|[\w-]+\.(dev|io|me|com)\/[\w-]+)\S*)/i);
-  resume.links = linkMatch ? linkMatch[0] : "";
-  const locMatch = contactText.match(/\b[A-Z][a-zA-Z.'-]+(?:\s[A-Z][a-zA-Z.'-]+)?,\s?[A-Z]{2}\b/);
+
+  const emails = (contactText + " | " + fullText).match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+  resume.email = emails[0] || "";
+
+  const phones = (contactText + " | " + fullText).match(/(\+?\d[\d\s().-]{7,}\d)/g) || [];
+  resume.phone = phones[0] || "";
+
+  const linkMatches = (contactText + " | " + fullText).match(/((?:https?:\/\/)?(?:www\.)?(?:linkedin\.com\/in\/[\w-]+|github\.com\/[\w-]+|[\w-]+\.(?:dev|io|me|com|app|org|net)\/[\w-]+))\S*/gi) || [];
+  resume.links = Array.from(new Set(linkMatches)).join(" · ");
+
+  const locMatch = (contactText + " | " + fullText).match(/\b[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*,\s*(?:[A-Z]{2}|[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*)\b/);
   resume.location = locMatch ? locMatch[0] : "";
 
   const sections = {};
@@ -145,19 +369,25 @@ export function parseResumeText(text) {
   for (; idx < lines.length; idx++) {
     const l = lines[idx];
     const key = matchImportSectionKey(l);
-    if (key) { currentKey = key; sections[key] = sections[key] || []; continue; }
-    if (currentKey) (sections[currentKey] = sections[currentKey] || []).push(l);
+    if (key) {
+      currentKey = key;
+      sections[key] = sections[key] || [];
+      continue;
+    }
+    if (currentKey) {
+      (sections[currentKey] = sections[currentKey] || []).push(l);
+    }
   }
 
-  resume.summary = (sections.summary || []).filter(Boolean).join(" ");
+  resume.summary = (sections.summary || []).map(cleanHtmlAndLine).filter(Boolean).join(" ");
   resume.experience = parseExperienceSection(sections.experience || []);
   resume.education = parseEducationSection(sections.education || []);
-  resume.skills = (sections.skills || []).map(stripBulletMarker).filter(Boolean).join(", ");
-  resume.projects = (sections.projects || []).map(stripBulletMarker).filter(Boolean).join("\n");
+  resume.skills = (sections.skills || []).map(stripBulletMarker).filter(Boolean).join("\n");
+  resume.projects = parseProjectsSection(sections.projects || []);
   resume.publications = (sections.publications || []).map(stripBulletMarker).filter(Boolean).join("\n");
-  resume.certifications = (sections.certifications || []).filter(Boolean).join(", ");
-  resume.languages = (sections.languages || []).filter(Boolean).join(", ");
-  resume.references = (sections.references || []).map(stripBulletMarker).filter(Boolean).join("\n");
+  resume.certifications = (sections.certifications || []).map(stripBulletMarker).filter(Boolean).join("\n");
+  resume.languages = (sections.languages || []).map(stripBulletMarker).filter(Boolean).join("\n");
+  resume.references = parseReferencesSection(sections.references || []);
 
   const cleaned = cleanupMixedLanguagesAndReferences(resume);
 
@@ -183,7 +413,7 @@ export function cleanupMixedLanguagesAndReferences(r) {
     if (match) {
       languages = match[1].replace(/[,;\s]+$/, "").trim();
       const extracted = match[2].trim();
-      references = references ? `${references}\n${extracted}` : extracted;
+      references = references ? `${references}\n\n${extracted}` : extracted;
     }
   }
 
@@ -197,3 +427,4 @@ export function cleanupMixedLanguagesAndReferences(r) {
 export function tokenize(text) {
   return (text.toLowerCase().match(/[a-z][a-z+#.]{1,}/g) || []).filter(w => !STOPWORDS.has(w) && w.length > 2);
 }
+

@@ -1,8 +1,10 @@
-import React from "react";
-import { Upload, FileText, Palette, ScanSearch, FolderOpen, Eye, Bot } from "lucide-react";
+import React, { useState } from "react";
+import { Upload, FileText, Palette, ScanSearch, FolderOpen, Eye, Bot, Star, Menu, X } from "lucide-react";
 import { ResumeIcon } from "./ResumeIcon";
 
-export function Header({ tab, setTab, isAiLoading = false }) {
+export function Header({ tab, setTab, isAiLoading = false, onOpenFeedback }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const tabs = [
     { id: "import", label: "Import", icon: Upload, desc: "Import existing .docx or text resume" },
     { id: "build", label: "Build", icon: FileText, desc: "Edit personal details, experience, & skills" },
@@ -13,12 +15,81 @@ export function Header({ tab, setTab, isAiLoading = false }) {
     { id: "preview", label: "Preview", icon: Eye, desc: "Print preview, ATS plain text, & PDF export" },
   ];
 
+  const handleTabClick = (tabId) => {
+    if (!isAiLoading) {
+      setTab(tabId);
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   return (
-    <div className="no-print" style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "14px 24px" }}>
-      <div className="rb-header-inner" style={{ maxWidth: 1180, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <header
+      className="no-print"
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        background: "#ffffff",
+        borderBottom: "1px solid #e5e7eb",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+        padding: "12px 24px",
+      }}
+    >
+      <style>{`
+        .rb-header-inner {
+          max-width: 1180px;
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          position: relative;
+        }
+        .rb-mobile-toggle-btn {
+          display: none;
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+          border: 1px solid #d1d5db;
+          border-radius: 7px;
+          background: #fff;
+          color: #374151;
+          cursor: pointer;
+        }
+        .rb-desktop-tabs {
+          display: flex;
+          gap: 4px;
+          align-items: center;
+        }
+        @media (max-width: 860px) {
+          .rb-header-subtitle { display: none; }
+          .rb-mobile-toggle-btn { display: flex; }
+          .rb-desktop-tabs {
+            display: ${isMobileMenuOpen ? "flex" : "none"} !important;
+            flex-direction: column;
+            position: absolute;
+            top: calc(100% + 12px);
+            left: -24px;
+            right: -24px;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            padding: 12px 20px;
+            gap: 8px;
+            align-items: stretch;
+            z-index: 101;
+          }
+          .rb-desktop-tabs button {
+            width: 100%;
+            justify-content: flex-start;
+            padding: 10px 14px;
+          }
+        }
+      `}</style>
+
+      <div className="rb-header-inner">
         <button
           type="button"
-          onClick={() => !isAiLoading && setTab("design")}
+          onClick={() => handleTabClick("design")}
           disabled={isAiLoading}
           title="Go to Home (Templates)"
           aria-label="MyResume Builder Home"
@@ -43,17 +114,29 @@ export function Header({ tab, setTab, isAiLoading = false }) {
             <div style={{ fontWeight: 700, fontSize: 17.5, color: "#0f172a" }}>
               MyResume Builder
             </div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>
+            <div className="rb-header-subtitle" style={{ fontSize: 12, color: "#64748b" }}>
               Tailored Templates · Smart ATS Review · AI Career Advisor · Version History
             </div>
           </div>
         </button>
-        <div className="rb-tabs" style={{ display: "flex", gap: 4 }}>
+
+        {/* Mobile Hamburger Toggle Button */}
+        <button
+          type="button"
+          className="rb-mobile-toggle-btn"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+        >
+          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
+        {/* Navigation Tabs Drawer / Bar */}
+        <nav className="rb-desktop-tabs" aria-label="Main Navigation">
           {tabs.map(t => (
             <button
               key={t.id}
               type="button"
-              onClick={() => !isAiLoading && setTab(t.id)}
+              onClick={() => handleTabClick(t.id)}
               disabled={isAiLoading}
               title={t.desc}
               aria-current={tab === t.id ? "page" : undefined}
@@ -70,8 +153,25 @@ export function Header({ tab, setTab, isAiLoading = false }) {
               <t.icon size={15} aria-hidden="true" /> {t.label}
             </button>
           ))}
-        </div>
+          {onOpenFeedback && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onOpenFeedback();
+              }}
+              title="Submit rating & review"
+              style={{
+                display: "flex", alignItems: "center", gap: 5, padding: "8px 12px", borderRadius: 7,
+                border: "1px solid #f59e0b", background: "#fef3c7", color: "#92400e",
+                fontSize: 13, fontWeight: 600, cursor: "pointer"
+              }}
+            >
+              <Star size={14} fill="#f59e0b" color="#f59e0b" /> Rate
+            </button>
+          )}
+        </nav>
       </div>
-    </div>
+    </header>
   );
 }

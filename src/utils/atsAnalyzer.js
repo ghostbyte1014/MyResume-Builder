@@ -227,3 +227,34 @@ export function analyzeRequirements(resume, jobDescription) {
 
   return { requirements, strengths, weaknesses, suggestions, coveragePct, strongCount: strong.length, partialCount: partial.length, missingCount: missing.length };
 }
+
+export function analyzeQuantifiableMetrics(resume) {
+  const expBullets = (resume.experience || []).flatMap(e => (e.bullets || []).filter(b => b.included).map(b => ({ role: e.role, text: b.text })));
+  const projBullets = (resume.projects || "").split("\n\n").flatMap(p => {
+    const lines = p.split("\n").map(l => l.trim()).filter(Boolean);
+    return lines.slice(1).map(l => ({ role: lines[0] || "Project", text: l }));
+  });
+
+  const all = [...expBullets, ...projBullets];
+  const withMetrics = [];
+  const lackingMetrics = [];
+
+  for (const item of all) {
+    if (/\d+|%|\$|k\b|m\b|b\b/i.test(item.text)) {
+      withMetrics.push(item);
+    } else {
+      lackingMetrics.push(item);
+    }
+  }
+
+  const metricPct = all.length ? Math.round((withMetrics.length / all.length) * 100) : 0;
+
+  return {
+    totalBullets: all.length,
+    withMetricsCount: withMetrics.length,
+    lackingMetricsCount: lackingMetrics.length,
+    metricPct,
+    withMetrics,
+    lackingMetrics: lackingMetrics.slice(0, 10)
+  };
+}

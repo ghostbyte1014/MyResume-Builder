@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, Check } from "lucide-react";
 import { StatusIcon } from "../common/StatusIcon";
 import { TabInfoBanner } from "../common/TabInfoBanner";
+import { analyzeQuantifiableMetrics } from "../../utils/atsAnalyzer";
 
 const SAMPLE_JOB_DESCRIPTION = `Job Title: Senior Software Engineer / Frontend Developer
 Location: Remote / Hybrid
@@ -300,6 +301,46 @@ export function AtsTab({
           </div>
         </div>
       )}
+
+      {/* Quantifiable Bullet Metrics Audit */}
+      {(() => {
+        const metricsData = analyzeQuantifiableMetrics(resume);
+        return (
+          <div style={{ marginTop: 22, padding: "12px 14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>
+                Bullet Quantification & Impact Audit
+              </div>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: metricsData.metricPct >= 50 ? "#16a34a" : "#d97706" }}>
+                {metricsData.metricPct}% Metrics Coverage ({metricsData.withMetricsCount}/{metricsData.totalBullets} bullets)
+              </span>
+            </div>
+            <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 10 }}>
+              ATS parsers and recruiters prioritize bullet points with quantifiable data (e.g., percentages, dollar amounts, time saved, or team sizes).
+            </div>
+
+            {metricsData.lackingMetrics.length > 0 ? (
+              <div>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: "#b45309", marginBottom: 4 }}>
+                  Bullets lacking measurable impact (add numbers or metrics):
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {metricsData.lackingMetrics.map((item, idx) => (
+                    <div key={idx} style={{ background: "#ffffff", border: "1px solid #fee2e2", padding: "6px 10px", borderRadius: 4, fontSize: 11.5, color: "#334155" }}>
+                      <span style={{ fontWeight: 600, color: "#1e3a5f", marginRight: 6 }}>[{item.role}]:</span>
+                      <span>{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: 11.5, color: "#166534", background: "#f0fdf4", padding: "8px 10px", borderRadius: 4, border: "1px solid #bbf7d0" }}>
+                Great job! All your key bullets contain quantifiable metrics and numbers.
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

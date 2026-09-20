@@ -1,6 +1,7 @@
 import React from "react";
+import { Star } from "lucide-react";
 
-export function Footer() {
+export function Footer({ onOpenFeedback }) {
   const currentYear = new Date().getFullYear();
   return (
     <footer
@@ -20,7 +21,7 @@ export function Footer() {
           maxWidth: 1180,
           margin: "0 auto",
           display: "flex",
-          justify: "space-between",
+          justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: 10,
@@ -29,8 +30,31 @@ export function Footer() {
         <div>
           © {currentYear} <strong style={{ color: "#1e3a5f" }}>GhostByte</strong>. All rights reserved.
         </div>
-        <div style={{ color: "#94a3b8", fontSize: 12 }}>
-          MyResume Builder
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {onOpenFeedback && (
+            <button
+              type="button"
+              onClick={onOpenFeedback}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                background: "#fff",
+                border: "1px solid #d7dbe0",
+                borderRadius: 6,
+                padding: "4px 10px",
+                fontSize: 12,
+                color: "#1e3a5f",
+                fontWeight: 500,
+                cursor: "pointer"
+              }}
+            >
+              <Star size={13} fill="#f59e0b" color="#f59e0b" /> Submit Rating & Review
+            </button>
+          )}
+          <span style={{ color: "#94a3b8", fontSize: 12 }}>
+            MyResume Builder
+          </span>
         </div>
       </div>
     </footer>

@@ -19,7 +19,7 @@ export function ImportTab({ setResume, setTab }) {
       const mammothModule = await import("mammoth");
       const mammoth = mammothModule.default || mammothModule;
       const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
+      const result = await mammoth.convertToHtml({ arrayBuffer });
       setImportText(result.value);
     } catch (err) {
       setImportError("Couldn't read that .docx file. Try pasting the text instead.");

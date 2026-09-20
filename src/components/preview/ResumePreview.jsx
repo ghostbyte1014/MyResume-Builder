@@ -9,7 +9,8 @@ export function ResumePreview({
   documentStyle,
   fontSize = 12.5,
   lineHeight = 1.5,
-  sectionSpacing = 14
+  sectionSpacing = 14,
+  showPageBreaks = false
 }) {
   const t = THEMES[theme] || THEMES.slate;
   const f = FONTS[font] || FONTS.sans;
@@ -19,7 +20,8 @@ export function ResumePreview({
     color: t.text,
     fontSize: Number(fontSize),
     lineHeight: Number(lineHeight),
-    overflowWrap: "anywhere"
+    overflowWrap: "anywhere",
+    position: "relative"
   };
 
   const photoPos = resume.photoPosition || { x: 50, y: 50 };
@@ -134,27 +136,65 @@ export function ResumePreview({
     </div>
   );
 
-  const SkillsBlock = () => <div>{resume.skills}</div>;
+  const SkillsBlock = () => {
+    const text = resume.skills || "";
+    if (text.includes("\n")) {
+      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      return (
+        <div>
+          {lines.map((l, i) => (
+            <div key={i} style={{ marginBottom: 3 }}>
+              {l}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return <div>{text}</div>;
+  };
 
-  const ProjectsBlock = () => (
-    <ul style={{ margin: "0 0 0 16px", padding: 0 }}>
-      {(resume.projects || "").split("\n").filter(Boolean).map((p, i) => <li key={i} style={{ marginBottom: 2 }}>{p}</li>)}
-    </ul>
-  );
+  const ProjectsBlock = () => {
+    const raw = resume.projects || "";
+    if (!raw.trim()) return null;
 
-  const FeaturedProjectsBlock = () => (
-    <div>
-      {(resume.projects || "").split("\n").filter(Boolean).map((p, i) => {
-        const parts = p.split(/\s[-–—]\s/);
-        return (
-          <div key={i} className="rb-entry" style={{ marginBottom: 8 }}>
-            <div style={{ fontWeight: 700, fontSize: Number(fontSize) * 1.02 }}>{parts[0]}</div>
-            {parts.length > 1 && <div style={{ fontSize: Number(fontSize) * 0.96 }}>{parts.slice(1).join(" - ")}</div>}
-          </div>
-        );
-      })}
-    </div>
-  );
+    const blocks = raw.includes("\n\n") ? raw.split("\n\n").filter(Boolean) : [raw];
+
+    return (
+      <div>
+        {blocks.map((block, i) => {
+          const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
+          if (!lines.length) return null;
+          const titleLine = lines[0];
+          const detailLines = lines.slice(1);
+
+          return (
+            <div key={i} className="rb-entry" style={{ marginBottom: 10 }}>
+              <div style={{ fontWeight: 700, fontSize: Number(fontSize) * 1.02 }}>
+                {titleLine.replace(/^•\s*/, "")}
+              </div>
+              {detailLines.map((dl, j) => {
+                if (dl.startsWith("•") || dl.startsWith("-")) {
+                  return (
+                    <div key={j} style={{ marginLeft: 14, fontSize: Number(fontSize) * 0.94, marginTop: 1 }}>
+                      • {dl.replace(/^[-•*●▪]\s*/, "")}
+                    </div>
+                  );
+                }
+                const isTech = dl.toLowerCase().startsWith("tech stack:");
+                return (
+                  <div key={j} style={{ fontSize: Number(fontSize) * 0.94, color: isTech ? t.accent : "inherit", fontWeight: isTech ? 600 : 400, marginTop: 1 }}>
+                    {dl}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const FeaturedProjectsBlock = () => <ProjectsBlock />;
 
   const PublicationsBlock = () => (
     <ul style={{ margin: "0 0 0 16px", padding: 0 }}>
@@ -162,9 +202,160 @@ export function ResumePreview({
     </ul>
   );
 
+  const CertificationsBlock = () => {
+    const text = resume.certifications || "";
+    if (text.includes("\n") || text.includes("•") || text.includes("- ")) {
+      const items = text.split(/\n|•/).map(s => s.replace(/^[-*•]\s*/, "").trim()).filter(Boolean);
+      return (
+        <ul style={{ margin: "0 0 0 16px", padding: 0 }}>
+          {items.map((item, i) => <li key={i} style={{ marginBottom: 3 }}>{item}</li>)}
+        </ul>
+      );
+    }
+    return <div>{text}</div>;
+  };
+
+  const LanguagesBlock = () => {
+    const text = resume.languages || "";
+    if (text.includes("\n") || text.includes("•") || text.includes("- ")) {
+      const items = text.split(/\n|•/).map(s => s.replace(/^[-*•]\s*/, "").trim()).filter(Boolean);
+      return (
+        <ul style={{ margin: "0 0 0 16px", padding: 0 }}>
+          {items.map((item, i) => <li key={i} style={{ marginBottom: 3 }}>{item}</li>)}
+        </ul>
+      );
+    }
+    return <div>{text}</div>;
+  };
+
+  const ReferencesBlock = () => {
+    const text = resume.references || "";
+    if (!text.trim()) return null;
+    const blocks = text.includes("\n\n") ? text.split("\n\n").filter(Boolean) : [text];
+
+    return (
+      <div>
+        {blocks.map((block, i) => {
+          const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
+          return (
+            <div key={i} style={{ marginBottom: 8 }}>
+              {lines.map((l, j) => (
+                <div key={j} style={{ fontWeight: (j === 0 || l.startsWith("[")) ? 600 : 400, fontSize: Number(fontSize) * (j === 0 ? 0.98 : 0.92) }}>
+                  {l.replace(/^SUBHEADER:\s*/, "")}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const sectionOrder = resume.sectionOrder || [
+    "summary", "experience", "projects", "education", "skills",
+    "certifications", "publications", "languages", "references"
+  ];
+
+  const renderSectionByKey = (key) => {
+    switch (key) {
+      case "summary":
+        return resume.summary ? (
+          <React.Fragment key="summary">
+            <SectionTitle>Summary</SectionTitle>
+            <div>{resume.summary}</div>
+          </React.Fragment>
+        ) : null;
+      case "experience":
+        return (resume.experience && resume.experience.length) ? (
+          <React.Fragment key="experience">
+            <SectionTitle>Experience</SectionTitle>
+            <ExperienceBlock />
+          </React.Fragment>
+        ) : null;
+      case "projects":
+        return resume.projects ? (
+          <React.Fragment key="projects">
+            <SectionTitle>Projects</SectionTitle>
+            <ProjectsBlock />
+          </React.Fragment>
+        ) : null;
+      case "education":
+        return (resume.education && resume.education.length) ? (
+          <React.Fragment key="education">
+            <SectionTitle>Education</SectionTitle>
+            <EducationBlock />
+          </React.Fragment>
+        ) : null;
+      case "skills":
+        return resume.skills ? (
+          <React.Fragment key="skills">
+            <SectionTitle>Skills</SectionTitle>
+            <SkillsBlock />
+          </React.Fragment>
+        ) : null;
+      case "publications":
+        return resume.publications ? (
+          <React.Fragment key="publications">
+            <SectionTitle>Publications & Grants</SectionTitle>
+            <PublicationsBlock />
+          </React.Fragment>
+        ) : null;
+      case "certifications":
+        return resume.certifications ? (
+          <React.Fragment key="certifications">
+            <SectionTitle>Certifications</SectionTitle>
+            <CertificationsBlock />
+          </React.Fragment>
+        ) : null;
+      case "languages":
+        return resume.languages ? (
+          <React.Fragment key="languages">
+            <SectionTitle>Languages</SectionTitle>
+            <LanguagesBlock />
+          </React.Fragment>
+        ) : null;
+      case "references":
+        return resume.references ? (
+          <React.Fragment key="references">
+            <SectionTitle>References</SectionTitle>
+            <ReferencesBlock />
+          </React.Fragment>
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
+  const PageBreakGuide = ({ top, pageNum }) => (
+    <div className="no-print" style={{
+      position: "absolute",
+      top,
+      left: 0,
+      right: 0,
+      borderTop: "2px dashed #3b82f6",
+      zIndex: 20,
+      pointerEvents: "none"
+    }}>
+      <span style={{
+        position: "absolute",
+        right: 12,
+        top: -10,
+        background: "#3b82f6",
+        color: "#fff",
+        fontSize: 10,
+        fontWeight: 600,
+        padding: "2px 6px",
+        borderRadius: 4
+      }}>
+        Page {pageNum} Boundary (A4/US Letter)
+      </span>
+    </div>
+  );
+
   if (layoutId === "sidebar") {
     return (
       <div style={{ ...bodyStyle, display: "flex", background: "#fff", minHeight: 500 }}>
+        {showPageBreaks && <><PageBreakGuide top={1056} pageNum={1} /><PageBreakGuide top={2112} pageNum={2} /></>}
         <div style={{ width: "32%", background: t.accentSoft, padding: "20px 16px" }}>
           {photoImg && <div style={{ marginBottom: 10 }}>{photoImg}</div>}
           <div style={{ fontFamily: f.heading, fontWeight: 700, fontSize: 18, color: t.text }}>{resume.name}</div>
@@ -174,125 +365,21 @@ export function ResumePreview({
           {dobLine}
           <SectionTitle>Skills</SectionTitle>
           <div style={{ fontSize: Number(fontSize) * 0.92 }}>{(resume.skills || "").split(",").map((s, i) => <div key={i} style={{ marginBottom: 2 }}>{s.trim()}</div>)}</div>
-          {resume.languages && <><SectionTitle>Languages</SectionTitle><div style={{ fontSize: Number(fontSize) * 0.92 }}>{resume.languages}</div></>}
+          {resume.languages && <><SectionTitle>Languages</SectionTitle><LanguagesBlock /></>}
         </div>
         <div style={{ width: "68%", padding: "20px 18px" }}>
-          <SectionTitle>Summary</SectionTitle>
-          <div>{resume.summary}</div>
-          <SectionTitle>Experience</SectionTitle>
-          <ExperienceBlock />
-          {resume.projects && <><SectionTitle>Projects</SectionTitle><ProjectsBlock /></>}
-          <SectionTitle>Education</SectionTitle>
-          <EducationBlock />
-          {resume.publications && <><SectionTitle>Publications</SectionTitle><PublicationsBlock /></>}
-          {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
-          {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
+          {sectionOrder.map(renderSectionByKey)}
         </div>
       </div>
     );
   }
 
-  if (layoutId === "executive") {
-    return (
-      <div style={{ ...bodyStyle, background: "#fff", padding: "26px 28px" }}>
-        <HeaderBlock isExecutive />
-        <div style={{ borderTop: `2px solid ${t.accent}`, margin: "10px 0" }} />
-        <SectionTitle>Summary</SectionTitle>
-        <div>{resume.summary}</div>
-        <SectionTitle>Experience</SectionTitle>
-        <ExperienceBlock />
-        {resume.projects && <><SectionTitle>Projects</SectionTitle><ProjectsBlock /></>}
-        <SectionTitle>Education</SectionTitle>
-        <EducationBlock />
-        {resume.publications && <><SectionTitle>Publications</SectionTitle><PublicationsBlock /></>}
-        <SectionTitle>Skills</SectionTitle>
-        <SkillsBlock />
-        {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
-        {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
-        {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
-      </div>
-    );
-  }
-
-  if (layoutId === "compact") {
-    return (
-      <div style={{ ...bodyStyle, fontSize: Number(fontSize) * 0.92, background: "#fff", padding: "20px 22px" }}>
-        <HeaderBlock />
-        <SectionTitle>Summary</SectionTitle>
-        <div>{resume.summary}</div>
-        <SectionTitle>Education</SectionTitle>
-        <EducationBlock />
-        <SectionTitle>Experience</SectionTitle>
-        <ExperienceBlock />
-        {resume.projects && <><SectionTitle>Projects</SectionTitle><ProjectsBlock /></>}
-        {resume.publications && <><SectionTitle>Publications</SectionTitle><PublicationsBlock /></>}
-        <SectionTitle>Skills</SectionTitle>
-        <SkillsBlock />
-        {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
-        {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
-        {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
-      </div>
-    );
-  }
-
-  if (layoutId === "portfolio") {
-    return (
-      <div style={{ ...bodyStyle, background: "#fff", padding: "24px 26px" }}>
-        <HeaderBlock />
-        <SectionTitle>Summary</SectionTitle>
-        <div>{resume.summary}</div>
-        {resume.projects && <><SectionTitle>Featured projects</SectionTitle><FeaturedProjectsBlock /></>}
-        <SectionTitle>Skills</SectionTitle>
-        <SkillsBlock />
-        <SectionTitle>Experience</SectionTitle>
-        <ExperienceBlock />
-        <SectionTitle>Education</SectionTitle>
-        <EducationBlock />
-        {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
-        {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
-        {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
-      </div>
-    );
-  }
-
-  if (layoutId === "academic") {
-    return (
-      <div style={{ ...bodyStyle, fontSize: Number(fontSize) * 0.92, background: "#fff", padding: "22px 24px" }}>
-        <HeaderBlock />
-        <SectionTitle>Research interests / summary</SectionTitle>
-        <div>{resume.summary}</div>
-        <SectionTitle>Education</SectionTitle>
-        <EducationBlock />
-        {resume.publications && <><SectionTitle>Publications & grants</SectionTitle><PublicationsBlock /></>}
-        <SectionTitle>Experience & teaching</SectionTitle>
-        <ExperienceBlock />
-        {resume.projects && <><SectionTitle>Projects</SectionTitle><ProjectsBlock /></>}
-        <SectionTitle>Skills</SectionTitle>
-        <SkillsBlock />
-        {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
-        {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
-        {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
-      </div>
-    );
-  }
-
-  // classic default
   return (
     <div style={{ ...bodyStyle, background: "#fff", padding: "24px 26px" }}>
-      <HeaderBlock />
-      <SectionTitle>Summary</SectionTitle>
-      <div>{resume.summary}</div>
-      <SectionTitle>Experience</SectionTitle>
-      <ExperienceBlock />
-      {resume.projects && <><SectionTitle>Projects</SectionTitle><ProjectsBlock /></>}
-      <SectionTitle>Education</SectionTitle>
-      <EducationBlock />
-      {resume.publications && <><SectionTitle>Publications</SectionTitle><PublicationsBlock /></>}
-      <SectionTitle>Skills</SectionTitle>
-      <SkillsBlock />
-      {resume.certifications && <><SectionTitle>Certifications</SectionTitle><div>{resume.certifications}</div></>}
-      {resume.languages && <><SectionTitle>Languages</SectionTitle><div>{resume.languages}</div></>}
-      {resume.references && <><SectionTitle>References</SectionTitle><div>{resume.references}</div></>}
+      {showPageBreaks && <><PageBreakGuide top={1056} pageNum={1} /><PageBreakGuide top={2112} pageNum={2} /></>}
+      <HeaderBlock isExecutive={layoutId === "executive"} />
+      {layoutId === "executive" && <div style={{ borderTop: `2px solid ${t.accent}`, margin: "10px 0" }} />}
+      {sectionOrder.map(renderSectionByKey)}
     </div>
   );
 }

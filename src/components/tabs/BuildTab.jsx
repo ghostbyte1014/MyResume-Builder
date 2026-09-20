@@ -55,6 +55,16 @@ export function BuildTab({ resume, setResume, documentStyle }) {
   function removeEdu(id) {
     setResume(r => ({ ...r, education: r.education.filter(e => e.id !== id) }));
   }
+  function moveEducation(fromIndex, toIndex) {
+    if (fromIndex === toIndex) return;
+    setResume(r => ({ ...r, education: reorderArray(r.education, fromIndex, toIndex) }));
+  }
+  function moveListItem(fieldKey, fromIndex, toIndex, delimiter = "\n") {
+    if (fromIndex === toIndex) return;
+    const current = parseListItems(resume[fieldKey], delimiter);
+    const updated = reorderArray(current, fromIndex, toIndex);
+    updateListField(fieldKey, updated, delimiter);
+  }
 
   function handlePhotoUpload(file) {
     if (!file) return;
@@ -83,11 +93,49 @@ export function BuildTab({ resume, setResume, documentStyle }) {
     return null;
   }
 
+  function parseListItems(val, delimiter = "\n") {
+    if (Array.isArray(val)) {
+      return val.map((item, idx) => typeof item === "string" ? { id: idx + 1, text: item } : (item.id ? item : { ...item, id: idx + 1 }));
+    }
+    if (!val || typeof val !== "string") return [];
+    return val
+      .split(delimiter)
+      .map(line => line.replace(/^[•\-*●▪]\s*/, "").trim())
+      .filter(Boolean)
+      .map((text, idx) => ({ id: idx + 1, text }));
+  }
+
+  function updateListField(fieldKey, items, joinDelimiter = "\n") {
+    const textValue = items
+      .map(it => (typeof it === "string" ? it : it.text || ""))
+      .filter(Boolean)
+      .join(joinDelimiter);
+    setResume(r => ({ ...r, [fieldKey]: textValue }));
+  }
+
+  function addListItem(fieldKey, defaultText = "", delimiter = "\n") {
+    const current = parseListItems(resume[fieldKey], delimiter);
+    const updated = [...current, { id: Date.now(), text: defaultText }];
+    updateListField(fieldKey, updated, delimiter);
+  }
+
+  function updateListItem(fieldKey, id, newText, delimiter = "\n") {
+    const current = parseListItems(resume[fieldKey], delimiter);
+    const updated = current.map(it => it.id === id ? { ...it, text: newText } : it);
+    updateListField(fieldKey, updated, delimiter);
+  }
+
+  function removeListItem(fieldKey, id, delimiter = "\n") {
+    const current = parseListItems(resume[fieldKey], delimiter);
+    const updated = current.filter(it => it.id !== id);
+    updateListField(fieldKey, updated, delimiter);
+  }
+
   return (
     <div>
       <TabInfoBanner
         title="Build Purpose"
-        description="Enter, edit, and organize your contact details, work experience bullets, action verb enhancements, education, skills, projects, and photo alignment settings."
+        description="Enter, edit, and organize your contact details, work experience bullets, action verb enhancements, education, skills, projects, certifications, and photo alignment settings."
       />
       <h3 style={{ marginTop: 0, fontSize: 15 }}>Your details</h3>
       <div className="rb-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
@@ -264,28 +312,216 @@ export function BuildTab({ resume, setResume, documentStyle }) {
         </div>
       ))}
 
+      {/* EDUCATION */}
       <h3 style={{ fontSize: 15, marginTop: 18, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         Education
         <button type="button" onClick={addEdu} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}><Plus size={13} /> Add</button>
       </h3>
-      {(resume.education || []).map(e => (
-        <div key={e.id} style={{ border: "1px solid #eee", borderRadius: 8, padding: 12, marginBottom: 10 }}>
-          <Field label="Degree" value={e.degree} onChange={v => updateEdu(e.id, "degree", v)} />
-          <div className="rb-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
-            <Field label="School" value={e.school} onChange={v => updateEdu(e.id, "school", v)} />
-            <Field label="Dates" value={e.dates} onChange={v => updateEdu(e.id, "dates", v)} placeholder="e.g. 2015 - 2019" />
+      {(resume.education || []).map((e, eduIndex) => (
+        <div key={e.id}
+          draggable
+          onDragStart={ev => {
+            if (!ev.target.closest(".rb-drag-handle")) { ev.preventDefault(); return; }
+            ev.dataTransfer.setData("application/x-edu-index", String(eduIndex));
+          }}
+          onDragOver={ev => ev.preventDefault()}
+          onDrop={ev => {
+            const raw = ev.dataTransfer.getData("application/x-edu-index");
+            if (raw === "") return;
+            moveEducation(Number(raw), eduIndex);
+          }}
+          style={{ border: "1px solid #eee", borderRadius: 8, padding: 12, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 6 }}>
+              <span className="rb-drag-handle" aria-hidden="true" title="Drag to reorder" style={{ cursor: "grab", color: "#9aa1ab" }}><GripVertical size={16} /></span>
+              <button type="button" onClick={() => moveEducation(eduIndex, eduIndex - 1)} disabled={eduIndex === 0} style={{ background: "none", border: "none", padding: 1, cursor: eduIndex === 0 ? "default" : "pointer", color: eduIndex === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={14} /></button>
+              <button type="button" onClick={() => moveEducation(eduIndex, eduIndex + 1)} disabled={eduIndex === resume.education.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: eduIndex === resume.education.length - 1 ? "default" : "pointer", color: eduIndex === resume.education.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={14} /></button>
+            </div>
+            <div style={{ flex: 1 }}>
+              <Field label="Degree" value={e.degree} onChange={v => updateEdu(e.id, "degree", v)} />
+              <div className="rb-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+                <Field label="School" value={e.school} onChange={v => updateEdu(e.id, "school", v)} />
+                <Field label="Dates" value={e.dates} onChange={v => updateEdu(e.id, "dates", v)} placeholder="e.g. 2015 - 2019" />
+              </div>
+              <button type="button" onClick={() => removeEdu(e.id)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer", padding: 0 }}><Trash2 size={13} /> Remove</button>
+            </div>
           </div>
-          <button type="button" onClick={() => removeEdu(e.id)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer", padding: 0 }}><Trash2 size={13} /> Remove</button>
         </div>
       ))}
 
-      <h3 style={{ fontSize: 15, marginTop: 18 }}>Skills & extras</h3>
-      <Field label="Skills (comma separated)" value={resume.skills} onChange={v => setResume(r => ({ ...r, skills: v }))} textarea />
-      <Field label="Projects (one per line)" value={resume.projects} onChange={v => setResume(r => ({ ...r, projects: v }))} textarea placeholder="Optional — leave blank to hide this section. For the portfolio layout, use 'Name - description' per line." />
-      <Field label="Publications & grants (one per line)" value={resume.publications} onChange={v => setResume(r => ({ ...r, publications: v }))} textarea placeholder="Optional — leave blank to hide this section" />
-      <Field label="Certifications" value={resume.certifications} onChange={v => setResume(r => ({ ...r, certifications: v }))} />
-      <Field label="Languages" value={resume.languages} onChange={v => setResume(r => ({ ...r, languages: v }))} />
-      <Field label="References" value={resume.references} onChange={v => setResume(r => ({ ...r, references: v }))} textarea placeholder="Optional — e.g. 'Available upon request' or specific referee contact details" />
+      {/* SKILLS */}
+      <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        Skills & Competencies
+        <button type="button" onClick={() => addListItem("skills", "", ", ")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
+          <Plus size={13} /> Add skill
+        </button>
+      </h3>
+      {parseListItems(resume.skills, resume.skills?.includes("\n") ? "\n" : ",").map((item, idx, arr) => (
+        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <button type="button" onClick={() => moveListItem("skills", idx, idx - 1, resume.skills?.includes("\n") ? "\n" : ", ")} disabled={idx === 0} style={{ background: "none", border: "none", padding: 1, cursor: idx === 0 ? "default" : "pointer", color: idx === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={13} /></button>
+          <button type="button" onClick={() => moveListItem("skills", idx, idx + 1, resume.skills?.includes("\n") ? "\n" : ", ")} disabled={idx === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: idx === arr.length - 1 ? "default" : "pointer", color: idx === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={13} /></button>
+          <input
+            value={item.text}
+            onChange={e => updateListItem("skills", item.id, e.target.value, resume.skills?.includes("\n") ? "\n" : ", ")}
+            placeholder="e.g. Programming Languages: HTML, CSS, JavaScript"
+            style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit" }}
+          />
+          <button type="button" onClick={() => removeListItem("skills", item.id, resume.skills?.includes("\n") ? "\n" : ", ")} aria-label="Remove skill" style={{ background: "none", border: "none", cursor: "pointer", color: "#b0392f", padding: 4 }}>
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ))}
+
+      {/* PROJECTS */}
+      <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        Projects
+        <button type="button" onClick={() => addListItem("projects", "", "\n\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
+          <Plus size={13} /> Add project
+        </button>
+      </h3>
+      {parseListItems(resume.projects, "\n\n").map((item, projIndex, arr) => (
+        <div key={item.id}
+          draggable
+          onDragStart={ev => {
+            if (!ev.target.closest(".rb-drag-handle")) { ev.preventDefault(); return; }
+            ev.dataTransfer.setData("application/x-proj-index", String(projIndex));
+          }}
+          onDragOver={ev => ev.preventDefault()}
+          onDrop={ev => {
+            const raw = ev.dataTransfer.getData("application/x-proj-index");
+            if (raw === "") return;
+            moveListItem("projects", Number(raw), projIndex, "\n\n");
+          }}
+          style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 10, marginBottom: 10, background: "#fafbfc" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 4 }}>
+              <span className="rb-drag-handle" aria-hidden="true" title="Drag to reorder" style={{ cursor: "grab", color: "#9aa1ab" }}><GripVertical size={16} /></span>
+              <button type="button" onClick={() => moveListItem("projects", projIndex, projIndex - 1, "\n\n")} disabled={projIndex === 0} style={{ background: "none", border: "none", padding: 1, cursor: projIndex === 0 ? "default" : "pointer", color: projIndex === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={14} /></button>
+              <button type="button" onClick={() => moveListItem("projects", projIndex, projIndex + 1, "\n\n")} disabled={projIndex === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: projIndex === arr.length - 1 ? "default" : "pointer", color: projIndex === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={14} /></button>
+            </div>
+            <textarea
+              value={item.text}
+              onChange={e => updateListItem("projects", item.id, e.target.value, "\n\n")}
+              rows={4}
+              placeholder="e.g. DYCI Connect — Institutional Hub&#10;Tech Stack: React, Supabase&#10;• Developed centralized management platform..."
+              style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
+            />
+            <button type="button" onClick={() => removeListItem("projects", item.id, "\n\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+              <Trash2 size={14} /> Remove
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {/* PUBLICATIONS */}
+      <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        Publications & Grants
+        <button type="button" onClick={() => addListItem("publications", "", "\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
+          <Plus size={13} /> Add publication
+        </button>
+      </h3>
+      {parseListItems(resume.publications, "\n").map((item, idx, arr) => (
+        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <button type="button" onClick={() => moveListItem("publications", idx, idx - 1, "\n")} disabled={idx === 0} style={{ background: "none", border: "none", padding: 1, cursor: idx === 0 ? "default" : "pointer", color: idx === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={13} /></button>
+          <button type="button" onClick={() => moveListItem("publications", idx, idx + 1, "\n")} disabled={idx === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: idx === arr.length - 1 ? "default" : "pointer", color: idx === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={13} /></button>
+          <input
+            value={item.text}
+            onChange={e => updateListItem("publications", item.id, e.target.value, "\n")}
+            placeholder="e.g. Research Paper Title, Journal Name, 2025"
+            style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit" }}
+          />
+          <button type="button" onClick={() => removeListItem("publications", item.id, "\n")} aria-label="Remove publication" style={{ background: "none", border: "none", cursor: "pointer", color: "#b0392f", padding: 4 }}>
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ))}
+
+      {/* CERTIFICATIONS */}
+      <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        Certifications & Credentials
+        <button type="button" onClick={() => addListItem("certifications", "", "\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
+          <Plus size={13} /> Add certification
+        </button>
+      </h3>
+      {parseListItems(resume.certifications, "\n").map((item, idx, arr) => (
+        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <button type="button" onClick={() => moveListItem("certifications", idx, idx - 1, "\n")} disabled={idx === 0} style={{ background: "none", border: "none", padding: 1, cursor: idx === 0 ? "default" : "pointer", color: idx === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={13} /></button>
+          <button type="button" onClick={() => moveListItem("certifications", idx, idx + 1, "\n")} disabled={idx === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: idx === arr.length - 1 ? "default" : "pointer", color: idx === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={13} /></button>
+          <input
+            value={item.text}
+            onChange={e => updateListItem("certifications", item.id, e.target.value, "\n")}
+            placeholder="e.g. Microsoft Office Specialist: Word 2019 Associate — Microsoft — Feb 2025"
+            style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit" }}
+          />
+          <button type="button" onClick={() => removeListItem("certifications", item.id, "\n")} aria-label="Remove certification" style={{ background: "none", border: "none", cursor: "pointer", color: "#b0392f", padding: 4 }}>
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ))}
+
+      {/* LANGUAGES */}
+      <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        Languages
+        <button type="button" onClick={() => addListItem("languages", "", "\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
+          <Plus size={13} /> Add language
+        </button>
+      </h3>
+      {parseListItems(resume.languages, "\n").map((item, idx, arr) => (
+        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <button type="button" onClick={() => moveListItem("languages", idx, idx - 1, "\n")} disabled={idx === 0} style={{ background: "none", border: "none", padding: 1, cursor: idx === 0 ? "default" : "pointer", color: idx === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={13} /></button>
+          <button type="button" onClick={() => moveListItem("languages", idx, idx + 1, "\n")} disabled={idx === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: idx === arr.length - 1 ? "default" : "pointer", color: idx === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={13} /></button>
+          <input
+            value={item.text}
+            onChange={e => updateListItem("languages", item.id, e.target.value, "\n")}
+            placeholder="e.g. English — Conversational Proficiency"
+            style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit" }}
+          />
+          <button type="button" onClick={() => removeListItem("languages", item.id, "\n")} aria-label="Remove language" style={{ background: "none", border: "none", cursor: "pointer", color: "#b0392f", padding: 4 }}>
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ))}
+
+      {/* REFERENCES */}
+      <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        References
+        <button type="button" onClick={() => addListItem("references", "", "\n\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
+          <Plus size={13} /> Add reference
+        </button>
+      </h3>
+      {parseListItems(resume.references, resume.references?.includes("\n\n") ? "\n\n" : "\n").map((item, refIndex, arr) => (
+        <div key={item.id}
+          draggable
+          onDragStart={ev => {
+            if (!ev.target.closest(".rb-drag-handle")) { ev.preventDefault(); return; }
+            ev.dataTransfer.setData("application/x-ref-index", String(refIndex));
+          }}
+          onDragOver={ev => ev.preventDefault()}
+          onDrop={ev => {
+            const raw = ev.dataTransfer.getData("application/x-ref-index");
+            if (raw === "") return;
+            moveListItem("references", Number(raw), refIndex, resume.references?.includes("\n\n") ? "\n\n" : "\n");
+          }}
+          style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 10, marginBottom: 10, background: "#fafbfc" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 4 }}>
+              <span className="rb-drag-handle" aria-hidden="true" title="Drag to reorder" style={{ cursor: "grab", color: "#9aa1ab" }}><GripVertical size={16} /></span>
+              <button type="button" onClick={() => moveListItem("references", refIndex, refIndex - 1, resume.references?.includes("\n\n") ? "\n\n" : "\n")} disabled={refIndex === 0} style={{ background: "none", border: "none", padding: 1, cursor: refIndex === 0 ? "default" : "pointer", color: refIndex === 0 ? "#d1d5db" : "#6b7280" }}><ChevronUp size={14} /></button>
+              <button type="button" onClick={() => moveListItem("references", refIndex, refIndex + 1, resume.references?.includes("\n\n") ? "\n\n" : "\n")} disabled={refIndex === arr.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: refIndex === arr.length - 1 ? "default" : "pointer", color: refIndex === arr.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={14} /></button>
+            </div>
+            <textarea
+              value={item.text}
+              onChange={e => updateListItem("references", item.id, e.target.value, resume.references?.includes("\n\n") ? "\n\n" : "\n")}
+              rows={3}
+              placeholder="e.g. Jane Smith — IT Director, Tech Corp&#10;Email: jane@tech.com | Phone: +63 900 000 0000"
+              style={{ flex: 1, padding: "7px 10px", border: "1px solid #d7dbe0", borderRadius: 6, fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
+            />
+            <button type="button" onClick={() => removeListItem("references", item.id, resume.references?.includes("\n\n") ? "\n\n" : "\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+              <Trash2 size={14} /> Remove
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

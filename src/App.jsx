@@ -10,6 +10,7 @@ import { Header } from "./components/common/Header";
 import { Footer } from "./components/common/Footer";
 import { FeedbackModal } from "./components/common/FeedbackModal";
 import { ActivationModal } from "./components/common/ActivationModal";
+import { FaqWidget } from "./components/common/FaqWidget";
 import { StatusIcon } from "./components/common/StatusIcon";
 import { ResumePreview } from "./components/preview/ResumePreview";
 
@@ -424,6 +425,11 @@ export default function App() {
         isOpen={isActivationOpen}
         onClose={() => setIsActivationOpen(false)}
         resume={resume}
+      />
+      <FaqWidget
+        setTab={setTab}
+        onOpenActivation={() => setIsActivationOpen(true)}
+        onOpenFeedback={handleOpenFeedback}
       />
     </div>
   );

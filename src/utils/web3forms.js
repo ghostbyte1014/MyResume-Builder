@@ -1,3 +1,57 @@
+export async function submitWeb3FormsContact({ name, email, inquiryType, message, deviceId }) {
+  const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
+
+  if (!accessKey || !accessKey.trim()) {
+    return {
+      success: false,
+      message: "Contact service is currently offline. Web3Forms access key is not configured in .env."
+    };
+  }
+
+  const subject = `AI Activation / Subscription Request (${inquiryType}): ${name || "User"}`;
+
+  const payload = {
+    access_key: accessKey.trim(),
+    name: name || "User",
+    email: email || "no-email-provided@myresumebuilder.app",
+    subject,
+    inquiry_type: inquiryType || "Device Activation",
+    device_id: deviceId || "Auto-generated web session",
+    message: message || "I would like to activate AI Review for my device.",
+    from_name: "MyResume Builder App"
+  };
+
+  try {
+    const response = await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      return {
+        success: true,
+        message: "Your activation request has been submitted! We will contact you shortly."
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || "Failed to submit activation request via Web3Forms."
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || "Network error submitting activation request."
+    };
+  }
+}
+
 export async function submitWeb3FormsReview({ name, email, rating, category, review }) {
   const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
 

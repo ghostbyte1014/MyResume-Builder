@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { CheckCircle2, XCircle, Zap, RefreshCw, Bot, Plus, Check, Copy, Download, HelpCircle, FileText, ArrowRight } from "lucide-react";
+import { CheckCircle2, XCircle, Zap, RefreshCw, Bot, Plus, Check, Copy, Download, HelpCircle, FileText, ArrowRight, Mail, AlertCircle } from "lucide-react";
 import { getStoredApiKey, analyzeResumeWithOpenRouter } from "../../utils/openrouter";
 import { downloadTextFile } from "../../utils/textExporter";
 import { TabInfoBanner } from "../common/TabInfoBanner";
 
-export function AiTab({ resume, setResume, jobDescription, setJobDescription, setTab, setIsAiLoading, analysisResult, setAnalysisResult }) {
+export function AiTab({ resume, setResume, jobDescription, setJobDescription, setTab, setIsAiLoading, analysisResult, setAnalysisResult, onOpenFeedback, onOpenActivation }) {
   const [targetCompany, setTargetCompany] = useState("");
   const [targetRole, setTargetRole] = useState(resume.title || "");
   
@@ -40,7 +40,8 @@ export function AiTab({ resume, setResume, jobDescription, setJobDescription, se
       });
       setAnalysisResult(result);
     } catch (err) {
-      setError(err.message || "An unexpected error occurred during AI analysis.");
+      console.error(err);
+      setError("AI Review is currently unavailable or offline. Please try again in a few minutes.");
     } finally {
       setLoading(false);
       if (setIsAiLoading) setIsAiLoading(false);
@@ -172,7 +173,46 @@ export function AiTab({ resume, setResume, jobDescription, setJobDescription, se
         />
       </div>
 
-      {error && <div style={{ fontSize: 12.5, color: "#b0392f", marginBottom: 14, background: "#fdf2f2", padding: "8px 12px", borderRadius: 6, border: "1px solid #f87171" }}>{error}</div>}
+      {(error || !hasApiKey) && (
+        <div style={{
+          background: "#fff9f2",
+          border: "1px solid #fed7aa",
+          borderRadius: 8,
+          padding: 16,
+          marginBottom: 16,
+          color: "#7c2d12"
+        }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 6, color: "#9a3412" }}>
+            <AlertCircle size={17} style={{ flexShrink: 0 }} />
+            <span>AI Review is currently unavailable or offline. Please try again in a few minutes.</span>
+          </div>
+          <div style={{ fontSize: 12.5, color: "#7c2d12", lineHeight: 1.5, marginBottom: 12 }}>
+            If you need immediate activation for your device/account (paid service, valid for 1 device once registered), please click below to submit an activation request.
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenActivation) onOpenActivation();
+              else if (onOpenFeedback) onOpenFeedback({ category: "Feature Enhancement", review: "Paid Subscription & Device Activation Inquiry" });
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: "#1e3a5f",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: 6,
+              padding: "8px 14px",
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: "pointer"
+            }}
+          >
+            <Mail size={14} /> Contact for Activation & Paid Subscription
+          </button>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 24 }}>
         <button

@@ -1,18 +1,43 @@
 import React, { useState } from "react";
-import { Upload, ScanSearch } from "lucide-react";
+import { Upload, ScanSearch, FileText, FileCode } from "lucide-react";
 import { parseResumeText } from "../../utils/parser";
+import { extractTextFromPdf } from "../../utils/pdfImporter";
 import { TabInfoBanner } from "../common/TabInfoBanner";
 
 export function ImportTab({ setResume, setTab }) {
   const [importText, setImportText] = useState("");
   const [importBusy, setImportBusy] = useState(false);
+  const [activeType, setActiveType] = useState(""); // "pdf" | "docx" | "txt"
   const [importError, setImportError] = useState("");
   const [pendingImport, setPendingImport] = useState(null);
+
+  async function handlePdfUpload(file) {
+    if (!file) return;
+    setImportError("");
+    setImportBusy(true);
+    setActiveType("pdf");
+    setPendingImport(null);
+    try {
+      const text = await extractTextFromPdf(file);
+      if (!text || !text.trim()) {
+        setImportError("No readable text found in that PDF file. Scanned images or image-only PDFs are not supported.");
+      } else {
+        setImportText(text);
+      }
+    } catch (err) {
+      console.error(err);
+      setImportError("Couldn't read that PDF file. Try pasting the text instead.");
+    } finally {
+      setImportBusy(false);
+      setActiveType("");
+    }
+  }
 
   async function handleDocxUpload(file) {
     if (!file) return;
     setImportError("");
     setImportBusy(true);
+    setActiveType("docx");
     setPendingImport(null);
     try {
       // Dynamic import to keep initial bundle size lightweight
@@ -22,9 +47,33 @@ export function ImportTab({ setResume, setTab }) {
       const result = await mammoth.convertToHtml({ arrayBuffer });
       setImportText(result.value);
     } catch (err) {
+      console.error(err);
       setImportError("Couldn't read that .docx file. Try pasting the text instead.");
     } finally {
       setImportBusy(false);
+      setActiveType("");
+    }
+  }
+
+  async function handleTxtUpload(file) {
+    if (!file) return;
+    setImportError("");
+    setImportBusy(true);
+    setActiveType("txt");
+    setPendingImport(null);
+    try {
+      const text = await file.text();
+      if (!text || !text.trim()) {
+        setImportError("The selected text file is empty.");
+      } else {
+        setImportText(text);
+      }
+    } catch (err) {
+      console.error(err);
+      setImportError("Couldn't read that text file.");
+    } finally {
+      setImportBusy(false);
+      setActiveType("");
     }
   }
 
@@ -35,6 +84,7 @@ export function ImportTab({ setResume, setTab }) {
       const { resume: parsed, summaryCounts } = parseResumeText(importText);
       setPendingImport({ resume: parsed, summaryCounts });
     } catch (err) {
+      console.error(err);
       setImportError("Couldn't parse that text. Try pasting a cleaner copy, or fill in the Build tab by hand.");
     }
   }
@@ -51,28 +101,81 @@ export function ImportTab({ setResume, setTab }) {
     <div>
       <TabInfoBanner
         title="Import Purpose"
-        description="Upload an existing .docx file or paste raw text to parse contact info, work experience, education, and skills into your working draft."
+        description="Upload an existing PDF (.pdf), Word document (.docx), or text file (.txt), or paste raw text to parse contact info, work experience, education, and skills into your working draft."
       />
       <h3 style={{ marginTop: 0, fontSize: 15 }}>Import an existing resume</h3>
       <p style={{ fontSize: 12, color: "#6b7280", marginTop: 0, marginBottom: 14 }}>
-        Best-effort parsing, not perfect — it looks for section headers like "Experience" and "Education" and does its best with dates and bullets. PDF isn't supported here since there's no PDF-reading library available in this environment; convert to .docx or paste the text instead. Always review the result on the Build tab afterward.
+        Best-effort parsing, not perfect — it looks for section headers like "Experience" and "Education" and does its best with dates and bullets. Select your file format below or paste raw text directly. Always review the result on the Build tab afterward.
       </p>
 
-      <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, background: "#eef1f4", border: "none", borderRadius: 6, padding: "8px 14px", cursor: "pointer", marginBottom: 14 }}>
-        <Upload size={14} aria-hidden="true" /> {importBusy ? "Reading file…" : "Upload a .docx file"}
-        <input type="file" accept=".docx" onChange={ev => handleDocxUpload(ev.target.files && ev.target.files[0])} disabled={importBusy}
-          style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }} />
-      </label>
+      {/* Separate upload buttons for each file type */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, background: "#eef1f4", border: "1px solid #dcdfe4", borderRadius: 6, padding: "8px 14px", cursor: importBusy ? "wait" : "pointer", opacity: importBusy && activeType !== "pdf" ? 0.6 : 1 }}>
+          <Upload size={14} aria-hidden="true" />
+          {importBusy && activeType === "pdf" ? "Reading PDF…" : "Upload .pdf File"}
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={ev => {
+              const file = ev.target.files && ev.target.files[0];
+              if (file) handlePdfUpload(file);
+              ev.target.value = "";
+            }}
+            disabled={importBusy}
+            style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}
+          />
+        </label>
+
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, background: "#eef1f4", border: "1px solid #dcdfe4", borderRadius: 6, padding: "8px 14px", cursor: importBusy ? "wait" : "pointer", opacity: importBusy && activeType !== "docx" ? 0.6 : 1 }}>
+          <FileText size={14} aria-hidden="true" />
+          {importBusy && activeType === "docx" ? "Reading DOCX…" : "Upload .docx File"}
+          <input
+            type="file"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={ev => {
+              const file = ev.target.files && ev.target.files[0];
+              if (file) handleDocxUpload(file);
+              ev.target.value = "";
+            }}
+            disabled={importBusy}
+            style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}
+          />
+        </label>
+
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, background: "#eef1f4", border: "1px solid #dcdfe4", borderRadius: 6, padding: "8px 14px", cursor: importBusy ? "wait" : "pointer", opacity: importBusy && activeType !== "txt" ? 0.6 : 1 }}>
+          <FileCode size={14} aria-hidden="true" />
+          {importBusy && activeType === "txt" ? "Reading TXT…" : "Upload .txt File"}
+          <input
+            type="file"
+            accept=".txt,text/plain"
+            onChange={ev => {
+              const file = ev.target.files && ev.target.files[0];
+              if (file) handleTxtUpload(file);
+              ev.target.value = "";
+            }}
+            disabled={importBusy}
+            style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}
+          />
+        </label>
+      </div>
 
       <div style={{ fontSize: 12.5, color: "#6b7280", marginBottom: 6 }}>...or paste resume text directly:</div>
-      <textarea value={importText} onChange={e => setImportText(e.target.value)} rows={12}
+      <textarea
+        value={importText}
+        onChange={e => setImportText(e.target.value)}
+        rows={12}
         placeholder="Paste your existing resume text here — from a Word doc, a text file, or copied out of a PDF viewer"
-        style={{ width: "100%", padding: 10, border: "1px solid #d7dbe0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", marginBottom: 10 }} />
+        style={{ width: "100%", padding: 10, border: "1px solid #d7dbe0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", marginBottom: 10 }}
+      />
 
       {importError && <div style={{ fontSize: 12, color: "#b0392f", marginBottom: 10 }}>{importError}</div>}
 
-      <button type="button" onClick={handleParseImport} disabled={!importText.trim() || importBusy}
-        style={{ display: "flex", alignItems: "center", gap: 6, background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 7, padding: "9px 16px", fontSize: 13.5, cursor: importText.trim() ? "pointer" : "default", opacity: importText.trim() ? 1 : 0.5 }}>
+      <button
+        type="button"
+        onClick={handleParseImport}
+        disabled={!importText.trim() || importBusy}
+        style={{ display: "flex", alignItems: "center", gap: 6, background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 7, padding: "9px 16px", fontSize: 13.5, cursor: importText.trim() ? "pointer" : "default", opacity: importText.trim() ? 1 : 0.5 }}
+      >
         <ScanSearch size={15} aria-hidden="true" /> Parse this text
       </button>
 
@@ -99,3 +202,4 @@ export function ImportTab({ setResume, setTab }) {
     </div>
   );
 }
+

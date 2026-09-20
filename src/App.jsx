@@ -9,6 +9,7 @@ import { analyzeResume, analyzeRequirements } from "./utils/atsAnalyzer";
 import { Header } from "./components/common/Header";
 import { Footer } from "./components/common/Footer";
 import { FeedbackModal } from "./components/common/FeedbackModal";
+import { ActivationModal } from "./components/common/ActivationModal";
 import { StatusIcon } from "./components/common/StatusIcon";
 import { ResumePreview } from "./components/preview/ResumePreview";
 
@@ -24,6 +25,13 @@ const DRAFT_STORAGE_KEY = "myresume_builder_auto_draft";
 
 export default function App() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isActivationOpen, setIsActivationOpen] = useState(false);
+  const [feedbackConfig, setFeedbackConfig] = useState({ category: "", review: "" });
+
+  function handleOpenFeedback(config = {}) {
+    setFeedbackConfig(config);
+    setIsFeedbackOpen(true);
+  }
   const [resume, setResume] = useState(() => {
     if (typeof window !== "undefined" && window.localStorage) {
       try {
@@ -246,7 +254,7 @@ export default function App() {
         }
       `}</style>
 
-      <Header tab={tab} setTab={setTab} isAiLoading={isAiLoading} onOpenFeedback={() => setIsFeedbackOpen(true)} />
+      <Header tab={tab} setTab={setTab} isAiLoading={isAiLoading} onOpenFeedback={() => handleOpenFeedback()} />
 
       <div className="rb-grid" style={{ maxWidth: 1180, margin: "0 auto", padding: "22px 24px 60px", display: tab === "preview" ? "block" : "grid", gridTemplateColumns: tab === "preview" ? "1fr" : "1fr 420px", gap: 22 }}>
 
@@ -282,6 +290,8 @@ export default function App() {
                 setIsAiLoading={setIsAiLoading}
                 analysisResult={aiAnalysisResult}
                 setAnalysisResult={setAiAnalysisResult}
+                onOpenFeedback={handleOpenFeedback}
+                onOpenActivation={() => setIsActivationOpen(true)}
               />
             )}
             {tab === "versions" && (
@@ -402,8 +412,19 @@ export default function App() {
           />
         )}
       </div>
-      <Footer onOpenFeedback={() => setIsFeedbackOpen(true)} />
-      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} resume={resume} />
+      <Footer onOpenFeedback={() => handleOpenFeedback()} />
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        resume={resume}
+        initialCategory={feedbackConfig.category}
+        initialReview={feedbackConfig.review}
+      />
+      <ActivationModal
+        isOpen={isActivationOpen}
+        onClose={() => setIsActivationOpen(false)}
+        resume={resume}
+      />
     </div>
   );
 }

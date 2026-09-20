@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Star, X, Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { submitWeb3FormsReview } from "../../utils/web3forms";
 
@@ -17,16 +17,25 @@ const RATING_LABELS = {
   5: "Excellent"
 };
 
-export function FeedbackModal({ isOpen, onClose, resume }) {
+export function FeedbackModal({ isOpen, onClose, resume, initialCategory, initialReview }) {
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [category, setCategory] = useState("User Experience");
+  const [category, setCategory] = useState(initialCategory || "User Experience");
   const [name, setName] = useState(resume?.name || "");
   const [email, setEmail] = useState(resume?.email || "");
-  const [review, setReview] = useState("");
+  const [review, setReview] = useState(initialReview || "");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialCategory) setCategory(initialCategory);
+      if (initialReview) setReview(initialReview);
+      if (resume?.name && !name) setName(resume.name);
+      if (resume?.email && !email) setEmail(resume.email);
+    }
+  }, [isOpen, initialCategory, initialReview, resume]);
 
   if (!isOpen) return null;
 
@@ -225,7 +234,7 @@ export function FeedbackModal({ isOpen, onClose, resume }) {
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="Your Name"
+                  placeholder="Enter your full name"
                   style={{ width: "100%", padding: "7px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 12.5, fontFamily: "inherit", boxSizing: "border-box" }}
                 />
               </div>
@@ -238,7 +247,7 @@ export function FeedbackModal({ isOpen, onClose, resume }) {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com"
+                  placeholder="Enter your email address"
                   style={{ width: "100%", padding: "7px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 12.5, fontFamily: "inherit", boxSizing: "border-box" }}
                 />
               </div>

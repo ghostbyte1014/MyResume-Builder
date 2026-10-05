@@ -24,6 +24,19 @@ import { PreviewTab } from "./components/tabs/PreviewTab";
 
 const DRAFT_STORAGE_KEY = "myresume_builder_auto_draft";
 
+/** Read and parse the auto-saved draft once. Returns null on any failure. */
+function readDraft() {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    }
+  } catch {
+    // corrupted storage — ignore
+  }
+  return null;
+}
+
 export default function App() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isActivationOpen, setIsActivationOpen] = useState(false);
@@ -33,73 +46,46 @@ export default function App() {
     setFeedbackConfig(config);
     setIsFeedbackOpen(true);
   }
+  // ── Single draft read shared by all useState initializers ──────────────────
   const [resume, setResume] = useState(() => {
-    if (typeof window !== "undefined" && window.localStorage) {
-      try {
-        const saved = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.resume) {
-            if (parsed.resume.name === "Jordan Rivera") {
-              parsed.resume.name = "John Doe";
-              if (parsed.resume.email === "jordan.rivera@email.com") parsed.resume.email = "john.doe@email.com";
-              if (parsed.resume.links === "linkedin.com/in/jordanrivera") parsed.resume.links = "linkedin.com/in/johndoe";
-            }
-            return cleanupMixedLanguagesAndReferences(parsed.resume);
-          }
-        }
-      } catch (err) {
-        // Fallback
+    const draft = readDraft();
+    if (draft?.resume) {
+      const r = draft.resume;
+      // One-time migration: rename the old demo persona
+      if (r.name === "Jordan Rivera") {
+        r.name = "John Doe";
+        if (r.email === "jordan.rivera@email.com") r.email = "john.doe@email.com";
+        if (r.links === "linkedin.com/in/jordanrivera") r.links = "linkedin.com/in/johndoe";
       }
+      return cleanupMixedLanguagesAndReferences(r);
     }
     return emptyResume();
   });
 
   const [tab, setTab] = useState("design");
-  const [categoryId, setCategoryId] = useState("business");
+
+  // Restore categoryId first so we can derive a sensible fallback for layout/color/font
+  const [categoryId, setCategoryId] = useState(() => readDraft()?.categoryId || "business");
   const category = CATEGORIES.find(c => c.id === categoryId) || CATEGORIES[0];
-  const [layoutId, setLayoutId] = useState(category.layout);
-  const [colorId, setColorId] = useState(category.color);
-  const [fontId, setFontId] = useState(category.font);
-  const [jobDescription, setJobDescription] = useState(() => {
-    if (typeof window !== "undefined" && window.localStorage) {
-      try {
-        const saved = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.jobDescription) return parsed.jobDescription;
-        }
-      } catch (err) {
-        // Fallback
-      }
-    }
-    return "";
-  });
-  const [pageSize, setPageSize] = useState("letter");
+  // Restore layout/color/font — these were saved but never read back, so every reload
+  // silently reverted to category defaults (contradicted the README persistence claim).
+  const [layoutId, setLayoutId] = useState(() => readDraft()?.layoutId || category.layout);
+  const [colorId, setColorId] = useState(() => readDraft()?.colorId || category.color);
+  const [fontId, setFontId] = useState(() => readDraft()?.fontId || category.font);
+  const [jobDescription, setJobDescription] = useState(() => readDraft()?.jobDescription || "");
+  const [pageSize, setPageSize] = useState(() => readDraft()?.pageSize || "letter");
   const [showAtsText, setShowAtsText] = useState(false);
-  const [documentStyle, setDocumentStyle] = useState("us");
+  const [documentStyle, setDocumentStyle] = useState(() => readDraft()?.documentStyle || "us");
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
-  const [fontSize, setFontSize] = useState(12.5);
-  const [lineHeight, setLineHeight] = useState(1.5);
-  const [sectionSpacing, setSectionSpacing] = useState(14);
+  // Restore typography/spacing controls
+  const [fontSize, setFontSize] = useState(() => readDraft()?.fontSize || 12.5);
+  const [lineHeight, setLineHeight] = useState(() => readDraft()?.lineHeight || 1.5);
+  const [sectionSpacing, setSectionSpacing] = useState(() => readDraft()?.sectionSpacing || 14);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Persistent AI Analysis Result across tab switches & browser refreshes
-  const [aiAnalysisResult, setAiAnalysisResult] = useState(() => {
-    if (typeof window !== "undefined" && window.localStorage) {
-      try {
-        const saved = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.aiAnalysisResult) return parsed.aiAnalysisResult;
-        }
-      } catch (err) {
-        // Fallback
-      }
-    }
-    return null;
-  });
+  const [aiAnalysisResult, setAiAnalysisResult] = useState(() => readDraft()?.aiAnalysisResult || null);
 
   useEffect(() => {
     const timer = setTimeout(() => {

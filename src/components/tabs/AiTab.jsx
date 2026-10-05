@@ -116,7 +116,7 @@ export function AiTab({ resume, setResume, jobDescription, setJobDescription, se
         }}>
           <div style={{ background: "#fff", padding: "32px 40px", borderRadius: 12, textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)", maxWidth: 420 }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-              <RefreshCw size={36} color="#1e3a5f" style={{ animation: "spin 1s linear infinite" }} />
+              <RefreshCw size={36} color="#1e3a5f" style={{ animation: "rb-spin 1s linear infinite" }} />
             </div>
             <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>AI Career Advisor Analyzing Resume...</div>
             <div style={{ fontSize: 13, color: "#64748b", marginTop: 8, lineHeight: 1.5 }}>
@@ -224,7 +224,7 @@ export function AiTab({ resume, setResume, jobDescription, setJobDescription, se
             padding: "10px 18px", fontSize: 13.5, fontWeight: 500, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1
           }}
         >
-          {loading ? <RefreshCw size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Zap size={15} />}
+          {loading ? <RefreshCw size={15} style={{ animation: "rb-spin 1s linear infinite" }} /> : <Zap size={15} />}
           {loading ? "Evaluating candidate fit..." : "Run AI Resume Review"}
         </button>
 

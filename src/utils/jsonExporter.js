@@ -40,7 +40,11 @@ export function parseResumeJSON(jsonString) {
         location: resumeObj.location || "",
         links: resumeObj.links || "",
         summary: resumeObj.summary || "",
-        experience: Array.isArray(resumeObj.experience) ? resumeObj.experience : [],
+        // Normalize experience entries — older backups may omit the `bullets` array,
+        // which causes analyzeResume to throw "Cannot read properties of undefined".
+        experience: Array.isArray(resumeObj.experience)
+          ? resumeObj.experience.map(e => ({ ...e, bullets: Array.isArray(e.bullets) ? e.bullets : [] }))
+          : [],
         education: Array.isArray(resumeObj.education) ? resumeObj.education : [],
         skills: resumeObj.skills || "",
         projects: resumeObj.projects || "",
@@ -51,7 +55,11 @@ export function parseResumeJSON(jsonString) {
         photo: resumeObj.photo || "",
         photoPosition: resumeObj.photoPosition || { x: 50, y: 50 },
         photoAlign: resumeObj.photoAlign || "center",
-        dob: resumeObj.dob || ""
+        dob: resumeObj.dob || "",
+        // Preserve custom section order — was silently dropped on every JSON round-trip
+        sectionOrder: Array.isArray(resumeObj.sectionOrder) ? resumeObj.sectionOrder
+          : ["summary", "experience", "projects", "education", "skills",
+             "certifications", "publications", "languages", "references"]
       },
       layoutId: data.layoutId || undefined,
       colorId: data.colorId || undefined,

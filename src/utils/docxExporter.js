@@ -1,14 +1,26 @@
+/** Escape HTML special characters so user-entered text is safe inside the Word HTML document. */
+function esc(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function exportResumeToDocx(resume) {
-  const name = resume.name || "Resume";
-  const title = resume.title || "";
-  const contactInfo = [resume.email, resume.phone, resume.location, resume.links].filter(Boolean).join(" | ");
+  const name = esc(resume.name || "Resume");
+  const title = esc(resume.title || "");
+  const contactInfo = [resume.email, resume.phone, resume.location, resume.links]
+    .filter(Boolean).map(esc).join(" | ");
 
   const formatList = (str) => {
     if (!str) return "";
     return str
       .split("\n")
       .filter(Boolean)
-      .map(l => `<p style="margin-left: 18px; margin-top: 0pt; margin-bottom: 2pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 2pt; line-height: 1.2;">• ${l.replace(/^[-•*●▪]\s*/, "")}</p>`)
+      .map(l => `<p style="margin-left: 18px; margin-top: 0pt; margin-bottom: 2pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 2pt; line-height: 1.2;">• ${esc(l.replace(/^[-•*●▪]\s*/, ""))}</p>`)
       .join("");
   };
 
@@ -22,9 +34,9 @@ export function exportResumeToDocx(resume) {
         const tLine = lines[0];
         const rest = lines.slice(1);
         return `
-          <p style="font-weight: bold; font-size: 11pt; margin-top: 6pt; margin-bottom: 2pt; mso-margin-top-alt: 6pt; mso-margin-bottom-alt: 2pt;">${tLine.replace(/^•\s*/, "")}</p>
+          <p style="font-weight: bold; font-size: 11pt; margin-top: 6pt; margin-bottom: 2pt; mso-margin-top-alt: 6pt; mso-margin-bottom-alt: 2pt;">${esc(tLine.replace(/^•\s*/, ""))}</p>
           ${rest
-            .map(r => `<p style="margin-left: ${r.startsWith("•") || r.startsWith("-") ? "18px" : "0px"}; margin-top: 0pt; margin-bottom: 2pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 2pt; line-height: 1.2;">${r}</p>`)
+            .map(r => `<p style="margin-left: ${r.startsWith("•") || r.startsWith("-") ? "18px" : "0px"}; margin-top: 0pt; margin-bottom: 2pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 2pt; line-height: 1.2;">${esc(r)}</p>`)
             .join("")}
         `;
       })
@@ -38,13 +50,13 @@ export function exportResumeToDocx(resume) {
         <div style="margin-bottom: 8pt;">
           <table style="width: 100%; border-collapse: collapse; margin-top: 0pt; margin-bottom: 2pt;">
             <tr>
-              <td style="font-weight: bold; font-size: 11pt; padding: 0;">${e.role}${e.company ? `, ${e.company}` : ""}</td>
-              <td style="text-align: right; color: #4b5563; font-size: 10pt; padding: 0;">${e.dates || ""}</td>
+              <td style="font-weight: bold; font-size: 11pt; padding: 0;">${esc(e.role)}${e.company ? `, ${esc(e.company)}` : ""}</td>
+              <td style="text-align: right; color: #4b5563; font-size: 10pt; padding: 0;">${esc(e.dates || "")}</td>
             </tr>
           </table>
           ${(e.bullets || [])
             .filter(b => b.included)
-            .map(b => `<p style="margin-left: 18px; margin-top: 0pt; margin-bottom: 2pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 2pt; line-height: 1.2;">• ${b.text}</p>`)
+            .map(b => `<p style="margin-left: 18px; margin-top: 0pt; margin-bottom: 2pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 2pt; line-height: 1.2;">• ${esc(b.text)}</p>`)
             .join("")}
         </div>
       `)
@@ -57,8 +69,8 @@ export function exportResumeToDocx(resume) {
       .map(e => `
         <table style="width: 100%; border-collapse: collapse; margin-top: 0pt; margin-bottom: 4pt;">
           <tr>
-            <td style="font-size: 10.5pt; padding: 0;"><strong>${e.degree}</strong>${e.school ? `, ${e.school}` : ""}</td>
-            <td style="text-align: right; color: #4b5563; font-size: 10pt; padding: 0;">${e.dates || ""}</td>
+            <td style="font-size: 10.5pt; padding: 0;"><strong>${esc(e.degree)}</strong>${e.school ? `, ${esc(e.school)}` : ""}</td>
+            <td style="text-align: right; color: #4b5563; font-size: 10pt; padding: 0;">${esc(e.dates || "")}</td>
           </tr>
         </table>
       `)
@@ -69,7 +81,7 @@ export function exportResumeToDocx(resume) {
     if (!str) return "";
     const blocks = str.includes("\n\n") ? str.split("\n\n").filter(Boolean) : [str];
     return blocks
-      .map(b => `<div style="margin-bottom: 6pt; line-height: 1.2;">${b.replace(/\n/g, "<br/>")}</div>`)
+      .map(b => `<div style="margin-bottom: 6pt; line-height: 1.2;">${esc(b).replace(/\n/g, "<br/>")}</div>`)
       .join("");
   };
 

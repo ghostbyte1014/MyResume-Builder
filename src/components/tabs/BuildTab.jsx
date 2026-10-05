@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown, Zap, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import { Field } from "../common/Field";
 import { WEAK_VERB_MAP } from "../../constants/dictionary";
@@ -6,8 +6,11 @@ import { TabInfoBanner } from "../common/TabInfoBanner";
 import { parseReferencesSection } from "../../utils/parser";
 import { CATEGORY_EXAMPLES } from "../../constants/categoryExamples";
 
+const MAX_PHOTO_BYTES = 500 * 1024; // 500 KB keeps the auto-save payload under localStorage quotas
+
 export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech" }) {
   const ex = CATEGORY_EXAMPLES[categoryId] || CATEGORY_EXAMPLES.tech;
+  const [photoError, setPhotoError] = useState("");
   function updateExp(id, field, value) {
     setResume(r => ({ ...r, experience: r.experience.map(e => e.id === id ? { ...e, [field]: value } : e) }));
   }
@@ -71,6 +74,14 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
 
   function handlePhotoUpload(file) {
     if (!file) return;
+    setPhotoError("");
+    if (file.size > MAX_PHOTO_BYTES) {
+      setPhotoError(
+        `Photo is too large (${Math.round(file.size / 1024)} KB). Please use an image under 500 KB — ` +
+        `large photos push the auto-save payload over browser storage limits and will silently stop saving.`
+      );
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => setResume(r => ({ ...r, photo: reader.result, photoPosition: { x: 50, y: 50 }, photoAlign: r.photoAlign || "center" }));
     reader.readAsDataURL(file);
@@ -185,6 +196,9 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
             <button type="button" onClick={removePhoto} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={13} aria-hidden="true" /> Remove</button>
           )}
         </div>
+        {photoError && (
+          <div style={{ fontSize: 12, color: "#b0392f", marginTop: 6 }}>{photoError}</div>
+        )}
 
         {resume.photo && (
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f1f2f4" }}>

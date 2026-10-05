@@ -54,7 +54,7 @@ export function analyzeResume(resume, jobDescription, layoutId, documentStyle) {
   // 3. Section completeness (15 pts)
   const sections = [
     ["Summary", resume.summary && resume.summary.trim().length > 20],
-    ["Work experience", resume.experience && resume.experience.length > 0 && resume.experience.some(e => e.bullets.some(b => b.included && b.text.trim()))],
+    ["Work experience", resume.experience && resume.experience.length > 0 && resume.experience.some(e => (e.bullets || []).some(b => b.included && b.text && b.text.trim()))],
     ["Education", resume.education && resume.education.length > 0],
     ["Skills", resume.skills && resume.skills.trim().length > 0],
   ];
@@ -240,7 +240,10 @@ export function analyzeQuantifiableMetrics(resume) {
   const lackingMetrics = [];
 
   for (const item of all) {
-    if (/\d+|%|\$|k\b|m\b|b\b/i.test(item.text)) {
+    // Require a real number or currency symbol. The original /k\b|m\b|b\b/ matched the
+    // last letter of ordinary words (e.g. "team" → m, "web" → b, "work" → k), inflating
+    // the metric percentage by 60%+ on fully non-quantified bullet sets.
+    if (/\d+|%|\$/.test(item.text) || /\b\d+\.?\d*\s*[kmb]\b/i.test(item.text)) {
       withMetrics.push(item);
     } else {
       lackingMetrics.push(item);

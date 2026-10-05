@@ -130,8 +130,16 @@ export function splitIntoParagraphs(lines) {
   return paras;
 }
 
+// Named-month prefix to prevent company-name words (e.g. "Corp") from being
+// treated as month abbreviations by the generic [A-Za-z]{3,9} pattern.
+const MONTH_PREFIX = "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+const DATE_RANGE_RE = new RegExp(
+  "\\(?((?:" + MONTH_PREFIX + "\\.?\\s+)?\\d{4}\\s*(?:[-–—]|to)\\s*(?:(?:" + MONTH_PREFIX + "\\.?\\s+)?\\d{4}|present))\\)?",
+  "i"
+);
+
 export function extractDateRange(line) {
-  const m = line.match(/\(?((?:[A-Za-z]{3,9}\.?\s+)?\d{4}\s*(?:[-–—]|to)\s*(?:(?:[A-Za-z]{3,9}\.?\s+)?\d{4}|present))\)?/i);
+  const m = line.match(DATE_RANGE_RE);
   return m ? { dates: m[1].trim(), rest: (line.slice(0, m.index) + line.slice(m.index + m[0].length)).replace(/[-–—,()]\s*$/, "").trim() } : { dates: "", rest: line };
 }
 
@@ -327,7 +335,9 @@ export function prepareInputLines(rawTextOrHtml) {
       .replace(/&#39;/g, "'")
       .replace(/&nbsp;/g, " ");
   }
-  return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  // Keep blank lines as empty strings so splitIntoParagraphs can detect
+  // paragraph boundaries between experience/education entries.
+  return text.split(/\r?\n/).map(l => l.trim());
 }
 
 export function parseResumeText(text) {
@@ -338,6 +348,8 @@ export function parseResumeText(text) {
   const fullText = lines.join("\n");
 
   let idx = 0;
+  // Skip any leading blank lines (blank lines are now preserved for paragraph detection)
+  while (idx < lines.length && !lines[idx]) idx++;
   resume.name = cleanHtmlAndLine(lines[idx]);
   idx++;
 
@@ -361,13 +373,15 @@ export function parseResumeText(text) {
   const emails = (contactText + " | " + fullText).match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
   resume.email = emails[0] || "";
 
-  const phones = (contactText + " | " + fullText).match(/(\+?\d[\d\s().-]{7,}\d)/g) || [];
+  const phones = (contactText + " | " + fullText).match(/(\(?\+?\d[\d\s().-]{7,}\d)/g) || [];
   resume.phone = phones[0] || "";
 
   const linkMatches = (contactText + " | " + fullText).match(/((?:https?:\/\/)?(?:www\.)?(?:linkedin\.com\/in\/[\w-]+|github\.com\/[\w-]+|[\w-]+\.(?:dev|io|me|com|app|org|net)\/[\w-]+))\S*/gi) || [];
   resume.links = Array.from(new Set(linkMatches)).join(" · ");
 
-  const locMatch = (contactText + " | " + fullText).match(/\b[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*,\s*(?:[A-Z]{2}|[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*)\b/);
+  // Search only the contact header area — scanning fullText causes false matches
+  // like "EXPERIENCE\nEngineer, Acme Corp" being picked up as a location.
+  const locMatch = contactText.match(/\b[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*,\s*(?:[A-Z]{2}|[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*)\b/);
   resume.location = locMatch ? locMatch[0] : "";
 
   const sections = {};

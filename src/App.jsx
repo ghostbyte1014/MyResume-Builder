@@ -12,6 +12,7 @@ import { FeedbackModal } from "./components/common/FeedbackModal";
 import { ActivationModal } from "./components/common/ActivationModal";
 import { FaqWidget } from "./components/common/FaqWidget";
 import { StatusIcon } from "./components/common/StatusIcon";
+import { ConfirmDialog } from "./components/common/ConfirmDialog";
 import { ResumePreview } from "./components/preview/ResumePreview";
 
 import { ImportTab } from "./components/tabs/ImportTab";
@@ -40,6 +41,7 @@ function readDraft() {
 export default function App() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isActivationOpen, setIsActivationOpen] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [feedbackConfig, setFeedbackConfig] = useState({ category: "", review: "" });
 
   function handleOpenFeedback(config = {}) {
@@ -65,7 +67,7 @@ export default function App() {
   const [tab, setTab] = useState("design");
 
   // Restore categoryId first so we can derive a sensible fallback for layout/color/font
-  const [categoryId, setCategoryId] = useState(() => readDraft()?.categoryId || "business");
+  const [categoryId, setCategoryId] = useState(() => readDraft()?.categoryId || "general");
   const category = CATEGORIES.find(c => c.id === categoryId) || CATEGORIES[0];
   // Restore layout/color/font — these were saved but never read back, so every reload
   // silently reverted to category defaults (contradicted the README persistence claim).
@@ -128,7 +130,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [jobDescription]);
 
-  const atsText = useMemo(() => resumeToPlainText(resume), [resume]);
+  const atsText = useMemo(() => resumeToPlainText(resume, categoryId), [resume, categoryId]);
   const previewMeasureRef = useRef(null);
   const [previewHeightPx, setPreviewHeightPx] = useState(0);
 
@@ -164,6 +166,37 @@ export default function App() {
     setFontId(c.font);
   }
 
+  function confirmResetResume() {
+    try {
+      window.localStorage?.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // Continue resetting the in-memory draft if browser storage is unavailable.
+    }
+
+    const generalPreset = CATEGORIES.find(c => c.id === "general") || CATEGORIES[0];
+    setResume(emptyResume());
+    setCategoryId(generalPreset.id);
+    setLayoutId(generalPreset.layout);
+    setColorId(generalPreset.color);
+    setFontId(generalPreset.font);
+    setDocumentStyle("us");
+    setPageSize("letter");
+    setFontSize(12.5);
+    setLineHeight(1.5);
+    setSectionSpacing(14);
+    setJobDescription("");
+    setAiAnalysisResult(null);
+    setShowAtsText(false);
+    setPreviewHeightPx(0);
+    setTab("build");
+    setIsResetConfirmOpen(false);
+  }
+
+  function requestResetResume() {
+    setIsResetConfirmOpen(true);
+    return true;
+  }
+
   function handlePrint() {
     window.print();
   }
@@ -189,7 +222,7 @@ export default function App() {
   function handleExportText() {
     const suffix = documentStyle === "intl" ? "cv" : "resume";
     const filename = (resume.name || suffix).trim().replace(/\s+/g, "_").toLowerCase() + `_${suffix}.txt`;
-    downloadTextFile(filename, resumeToPlainText(resume));
+    downloadTextFile(filename, resumeToPlainText(resume, categoryId));
   }
 
   const scoreColor = analysis.score >= 75 ? "#1a7f4b" : analysis.score >= 50 ? "#b8860b" : "#b0392f";
@@ -241,7 +274,7 @@ export default function App() {
         }
       `}</style>
 
-      <Header tab={tab} setTab={setTab} isAiLoading={isAiLoading} onOpenFeedback={() => handleOpenFeedback()} />
+      <Header tab={tab} setTab={setTab} isAiLoading={isAiLoading} onResetResume={requestResetResume} onOpenFeedback={() => handleOpenFeedback()} />
 
       <div className="rb-grid" style={{ maxWidth: 1180, margin: "0 auto", padding: "22px 24px 60px", display: tab === "preview" ? "block" : "grid", gridTemplateColumns: tab === "preview" ? "1fr" : "1fr 420px", gap: 22 }}>
 
@@ -249,11 +282,12 @@ export default function App() {
         {tab !== "preview" && (
           <div className="no-print" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
             {tab === "import" && <ImportTab setResume={setResume} setTab={setTab} />}
-            {tab === "build" && <BuildTab resume={resume} setResume={setResume} documentStyle={documentStyle} categoryId={categoryId} />}
+            {tab === "build" && <BuildTab resume={resume} setResume={setResume} documentStyle={documentStyle} categoryId={categoryId} onCategoryChange={pickCategory} />}
             {tab === "design" && (
               <TemplatesTab
                 documentStyle={documentStyle} pickDocumentStyle={pickDocumentStyle}
                 categoryId={categoryId} pickCategory={pickCategory}
+                setResume={setResume}
                 layoutId={layoutId} setLayoutId={setLayoutId}
                 colorId={colorId} setColorId={setColorId}
                 fontId={fontId} setFontId={setFontId}
@@ -375,6 +409,7 @@ export default function App() {
                     theme={colorId}
                     font={fontId}
                     documentStyle={documentStyle}
+                    categoryId={categoryId}
                     fontSize={fontSize}
                     lineHeight={lineHeight}
                     sectionSpacing={sectionSpacing}
@@ -389,7 +424,7 @@ export default function App() {
           </div>
         ) : (
           <PreviewTab
-            resume={resume} setResume={setResume} layoutId={layoutId} colorId={colorId} fontId={fontId} documentStyle={documentStyle}
+            resume={resume} setResume={setResume} layoutId={layoutId} colorId={colorId} fontId={fontId} documentStyle={documentStyle} categoryId={categoryId}
             pageSize={pageSize} setPageSize={setPageSize}
             showAtsText={showAtsText} setShowAtsText={setShowAtsText}
             atsText={atsText}
@@ -412,8 +447,17 @@ export default function App() {
         onClose={() => setIsActivationOpen(false)}
         resume={resume}
       />
+      <ConfirmDialog
+        isOpen={isResetConfirmOpen}
+        title="Reset the resume builder?"
+        description="Your active auto-saved draft and unsaved edits will be replaced with the default General mock resume. Saved versions and exported backup files will remain available."
+        confirmLabel="Reset resume"
+        onConfirm={confirmResetResume}
+        onCancel={() => setIsResetConfirmOpen(false)}
+      />
       <FaqWidget
         setTab={setTab}
+        onResetResume={requestResetResume}
         onOpenActivation={() => setIsActivationOpen(true)}
         onOpenFeedback={handleOpenFeedback}
       />

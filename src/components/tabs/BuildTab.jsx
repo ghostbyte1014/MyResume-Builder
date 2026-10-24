@@ -4,13 +4,39 @@ import { Field } from "../common/Field";
 import { WEAK_VERB_MAP } from "../../constants/dictionary";
 import { TabInfoBanner } from "../common/TabInfoBanner";
 import { parseReferencesSection } from "../../utils/parser";
-import { CATEGORY_EXAMPLES } from "../../constants/categoryExamples";
+import { CATEGORY_EXAMPLES, getCategoryFieldContent } from "../../constants/categoryExamples";
+import { CATEGORIES } from "../../constants/templatesData";
+import { createCategorySample } from "../../constants/resumeSamples";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 
 const MAX_PHOTO_BYTES = 500 * 1024; // 500 KB keeps the auto-save payload under localStorage quotas
 
-export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech" }) {
-  const ex = CATEGORY_EXAMPLES[categoryId] || CATEGORY_EXAMPLES.tech;
+export function BuildTab({ resume, setResume, documentStyle, categoryId = "general", onCategoryChange }) {
+  const ex = CATEGORY_EXAMPLES[categoryId] || CATEGORY_EXAMPLES.general;
+  const fields = getCategoryFieldContent(categoryId);
+  const selectedCategory = CATEGORIES.find(category => category.id === categoryId) || CATEGORIES[0];
   const [photoError, setPhotoError] = useState("");
+  const [isSampleConfirmOpen, setIsSampleConfirmOpen] = useState(false);
+  function loadCategorySample() {
+    setIsSampleConfirmOpen(true);
+  }
+  function confirmLoadCategorySample() {
+    setResume(createCategorySample(categoryId));
+    setIsSampleConfirmOpen(false);
+  }
+  function updateProfileDetail(field, value) {
+    setResume(r => ({
+      ...r,
+      profileDetails: {
+        specialization: "",
+        experienceLevel: "",
+        availability: "",
+        additional: "",
+        ...(r.profileDetails || {}),
+        [field]: value
+      }
+    }));
+  }
   function updateExp(id, field, value) {
     setResume(r => ({ ...r, experience: r.experience.map(e => e.id === id ? { ...e, [field]: value } : e) }));
   }
@@ -166,16 +192,69 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
     <div>
       <TabInfoBanner
         title="Build Purpose"
-        description="Enter, edit, and organize your contact details, work experience bullets, action verb enhancements, education, skills, projects, certifications, and photo alignment settings."
+        description="Enter and organize your contact details, experience, education or training, skills, projects, credentials, and other optional sections."
       />
+      <div style={{ background: "#f8fafc", border: "1px solid #dbe3ec", borderRadius: 8, padding: 12, marginBottom: 18 }}>
+        <label htmlFor="rb-resume-field" style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "#334155", marginBottom: 5 }}>
+          Resume field
+        </label>
+        <select
+          id="rb-resume-field"
+          value={categoryId}
+          onChange={event => onCategoryChange?.(event.target.value)}
+          style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, background: "#fff", fontSize: 13.5, fontFamily: "inherit" }}
+        >
+          {CATEGORIES.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}
+        </select>
+        <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 6 }}>
+          <strong>{fields.eyebrow}:</strong> {fields.intro} Changing this adapts labels, examples, and the recommended template; it never deletes your content.
+        </div>
+        <button
+          type="button"
+          onClick={loadCategorySample}
+          style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 9, padding: "6px 10px", border: "1px solid #94a3b8", borderRadius: 6, background: "#fff", color: "#334155", fontSize: 12, cursor: "pointer" }}
+        >
+          <Zap size={13} aria-hidden="true" /> Load {selectedCategory.label} example
+        </button>
+      </div>
       <h3 style={{ marginTop: 0, fontSize: 15 }}>Your details</h3>
       <div className="rb-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
         <Field label="Full name" value={resume.name} onChange={v => setResume(r => ({ ...r, name: v }))} />
-        <Field label="Target job title" value={resume.title} onChange={v => setResume(r => ({ ...r, title: v }))} />
+        <Field label={fields.targetTitleLabel} value={resume.title} onChange={v => setResume(r => ({ ...r, title: v }))} />
         <Field label="Email" value={resume.email} onChange={v => setResume(r => ({ ...r, email: v }))} />
         <Field label="Phone" value={resume.phone} onChange={v => setResume(r => ({ ...r, phone: v }))} />
         <Field label="Location" value={resume.location} onChange={v => setResume(r => ({ ...r, location: v }))} />
-        <Field label="Links (LinkedIn/portfolio)" value={resume.links} onChange={v => setResume(r => ({ ...r, links: v }))} />
+        <Field label={fields.linksLabel} value={resume.links} onChange={v => setResume(r => ({ ...r, links: v }))} />
+      </div>
+
+      <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12, marginBottom: 14, background: "#fcfcfd" }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#334155", marginBottom: 10 }}>{fields.detailSectionTitle}</div>
+        <div className="rb-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+          <Field
+            label={fields.specializationLabel}
+            value={resume.profileDetails?.specialization}
+            onChange={value => updateProfileDetail("specialization", value)}
+            placeholder={fields.specializationPlaceholder}
+          />
+          <Field
+            label={fields.experienceLevelLabel}
+            value={resume.profileDetails?.experienceLevel}
+            onChange={value => updateProfileDetail("experienceLevel", value)}
+            placeholder={fields.experienceLevelPlaceholder}
+          />
+          <Field
+            label={fields.availabilityLabel}
+            value={resume.profileDetails?.availability}
+            onChange={value => updateProfileDetail("availability", value)}
+            placeholder={fields.availabilityPlaceholder}
+          />
+          <Field
+            label={fields.additionalDetailsLabel}
+            value={resume.profileDetails?.additional}
+            onChange={value => updateProfileDetail("additional", value)}
+            placeholder={fields.additionalDetailsPlaceholder}
+          />
+        </div>
       </div>
 
       <div style={{ border: "1px dashed #d7dbe0", borderRadius: 8, padding: 12, marginBottom: 14 }}>
@@ -249,11 +328,11 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
         </div>
       )}
 
-      <Field label="Professional summary" value={resume.summary} onChange={v => setResume(r => ({ ...r, summary: v }))} textarea />
+      <Field label={fields.summaryLabel} value={resume.summary} onChange={v => setResume(r => ({ ...r, summary: v }))} placeholder={fields.summaryPlaceholder} textarea />
 
       <h3 style={{ fontSize: 15, marginTop: 18, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        Experience
-        <button type="button" onClick={addExp} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}><Plus size={13} /> Add role</button>
+        {fields.experienceTitle}
+        <button type="button" onClick={addExp} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}><Plus size={13} /> {fields.addExperienceLabel}</button>
       </h3>
       {(resume.experience || []).map((e, expIndex) => (
         <div key={e.id}
@@ -281,12 +360,12 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
             </div>
             <div style={{ flex: 1 }}>
               <div className="rb-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
-                <Field label="Role" value={e.role} onChange={v => updateExp(e.id, "role", v)} />
-                <Field label="Company" value={e.company} onChange={v => updateExp(e.id, "company", v)} />
+                <Field label={fields.roleLabel} value={e.role} onChange={v => updateExp(e.id, "role", v)} />
+                <Field label={fields.companyLabel} value={e.company} onChange={v => updateExp(e.id, "company", v)} />
               </div>
-              <Field label="Dates" value={e.dates} onChange={v => updateExp(e.id, "dates", v)} placeholder={documentStyle === "intl" ? "e.g. 03/2022 - Present (month/year, or DD/MM/YYYY for exact dates)" : "e.g. Mar 2022 - Present"} />
+              <Field label={fields.experienceDatesLabel} value={e.dates} onChange={v => updateExp(e.id, "dates", v)} placeholder={documentStyle === "intl" ? "e.g. 03/2022 - Present (month/year, or DD/MM/YYYY for exact dates)" : fields.experienceDatesPlaceholder} />
 
-              <span style={{ fontSize: 12.5, color: "#6b7280", display: "block", marginBottom: 4 }}>Bullet points — drag or use arrows to reorder, uncheck to exclude</span>
+              <span style={{ fontSize: 12.5, color: "#6b7280", display: "block", marginBottom: 4 }}>{fields.bulletHelp} — drag or use arrows to reorder, uncheck to exclude</span>
               {(e.bullets || []).map((b, bulletIndex) => {
                 const weakMatch = getWeakVerbMatch(b.text);
                 return (
@@ -348,8 +427,8 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
 
       {/* EDUCATION */}
       <h3 style={{ fontSize: 15, marginTop: 18, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        Education
-        <button type="button" onClick={addEdu} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}><Plus size={13} /> Add</button>
+        {fields.educationTitle}
+        <button type="button" onClick={addEdu} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}><Plus size={13} /> {fields.addEducationLabel}</button>
       </h3>
       {(resume.education || []).map((e, eduIndex) => (
         <div key={e.id}
@@ -372,10 +451,10 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
               <button type="button" onClick={() => moveEducation(eduIndex, eduIndex + 1)} disabled={eduIndex === resume.education.length - 1} style={{ background: "none", border: "none", padding: 1, cursor: eduIndex === resume.education.length - 1 ? "default" : "pointer", color: eduIndex === resume.education.length - 1 ? "#d1d5db" : "#6b7280" }}><ChevronDown size={14} /></button>
             </div>
             <div style={{ flex: 1 }}>
-              <Field label="Degree" value={e.degree} onChange={v => updateEdu(e.id, "degree", v)} />
+              <Field label={fields.degreeLabel} value={e.degree} onChange={v => updateEdu(e.id, "degree", v)} />
               <div className="rb-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
-                <Field label="School" value={e.school} onChange={v => updateEdu(e.id, "school", v)} />
-                <Field label="Dates" value={e.dates} onChange={v => updateEdu(e.id, "dates", v)} placeholder="e.g. 2015 - 2019" />
+                <Field label={fields.schoolLabel} value={e.school} onChange={v => updateEdu(e.id, "school", v)} />
+                <Field label={fields.educationDatesLabel} value={e.dates} onChange={v => updateEdu(e.id, "dates", v)} placeholder="e.g. 2015 - 2019" />
               </div>
               <button type="button" onClick={() => removeEdu(e.id)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#b0392f", background: "none", border: "none", cursor: "pointer", padding: 0 }}><Trash2 size={13} /> Remove</button>
             </div>
@@ -385,9 +464,9 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
 
       {/* SKILLS */}
       <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        Skills & Competencies
+        {fields.skillsTitle}
         <button type="button" onClick={() => addListItem("skills", "", resume.skills?.includes("\n") ? "\n" : ", ")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
-          <Plus size={13} /> Add skill
+          <Plus size={13} /> {fields.addSkillLabel}
         </button>
       </h3>
       {parseListItems(resume.skills, resume.skills?.includes("\n") ? "\n" : ", ").map((item, idx, arr) => (
@@ -408,11 +487,12 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
 
       {/* PROJECTS */}
       <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        Projects
+        {fields.projectsTitle}
         <button type="button" onClick={() => addListItem("projects", "", "\n\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
-          <Plus size={13} /> Add project
+          <Plus size={13} /> {fields.addProjectLabel}
         </button>
       </h3>
+      <p style={{ fontSize: 11.5, color: "#6b7280", margin: "-12px 0 10px" }}>{fields.projectsHelp}</p>
       {parseListItems(resume.projects, "\n\n").map((item, projIndex, arr) => (
         <div key={item.id}
           draggable
@@ -449,9 +529,9 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
 
       {/* PUBLICATIONS */}
       <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        Publications & Grants
+        {fields.publicationsTitle}
         <button type="button" onClick={() => addListItem("publications", "", "\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
-          <Plus size={13} /> Add publication
+          <Plus size={13} /> {fields.addPublicationLabel}
         </button>
       </h3>
       {parseListItems(resume.publications, "\n").map((item, idx, arr) => (
@@ -472,9 +552,9 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
 
       {/* CERTIFICATIONS */}
       <h3 style={{ fontSize: 15, marginTop: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        Certifications & Credentials
+        {fields.certificationsTitle}
         <button type="button" onClick={() => addListItem("certifications", "", "\n")} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, background: "#eef1f4", border: "none", borderRadius: 6, padding: "5px 9px", cursor: "pointer" }}>
-          <Plus size={13} /> Add certification
+          <Plus size={13} /> {fields.addCertificationLabel}
         </button>
       </h3>
       {parseListItems(resume.certifications, "\n").map((item, idx, arr) => (
@@ -556,6 +636,15 @@ export function BuildTab({ resume, setResume, documentStyle, categoryId = "tech"
           </div>
         </div>
       ))}
+      <ConfirmDialog
+        isOpen={isSampleConfirmOpen}
+        title={`Load the ${selectedCategory.label} example?`}
+        description="This will replace the current draft content with the selected field's mock resume. Saved versions and exported backup files will not be deleted."
+        confirmLabel="Load example"
+        tone="primary"
+        onConfirm={confirmLoadCategorySample}
+        onCancel={() => setIsSampleConfirmOpen(false)}
+      />
     </div>
   );
 }

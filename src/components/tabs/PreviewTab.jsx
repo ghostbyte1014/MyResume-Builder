@@ -3,9 +3,11 @@ import { ScanSearch, FileText, Printer, Download, Loader2, ChevronUp, ChevronDow
 import { ResumePreview } from "../preview/ResumePreview";
 import { TabInfoBanner } from "../common/TabInfoBanner";
 import { exportResumeToDocx } from "../../utils/docxExporter";
+import { getCategoryFieldContent } from "../../constants/categoryExamples";
+import { getEffectiveSectionOrder } from "../../utils/sectionOrder";
 
 export function PreviewTab({
-  resume, setResume, layoutId, colorId, fontId, documentStyle,
+  resume, setResume, layoutId, colorId, fontId, documentStyle, categoryId = "general",
   pageSize, setPageSize,
   showAtsText, setShowAtsText,
   atsText,
@@ -14,20 +16,18 @@ export function PreviewTab({
 }) {
   const [showSectionOrder, setShowSectionOrder] = useState(false);
   const [showPageBreaksToggle, setShowPageBreaksToggle] = useState(false);
+  const fields = getCategoryFieldContent(categoryId);
 
-  const sectionOrder = resume.sectionOrder || [
-    "summary", "experience", "projects", "education", "skills",
-    "certifications", "publications", "languages", "references"
-  ];
+  const sectionOrder = getEffectiveSectionOrder(resume.sectionOrder, layoutId);
 
   const sectionLabels = {
-    summary: "Summary",
-    experience: "Work Experience",
-    projects: "Projects",
-    education: "Education",
-    skills: "Skills & Competencies",
-    certifications: "Certifications",
-    publications: "Publications",
+    summary: fields.summaryTitle,
+    experience: fields.experienceTitle,
+    projects: fields.projectsTitle,
+    education: fields.educationTitle,
+    skills: fields.skillsTitle,
+    certifications: fields.certificationsTitle,
+    publications: fields.publicationsTitle,
     languages: "Languages",
     references: "References"
   };
@@ -73,7 +73,7 @@ export function PreviewTab({
           <button type="button" onClick={handleExportText} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", color: "#1e3a5f", border: "1px solid #d7dbe0", borderRadius: 7, padding: "9px 14px", fontSize: 13.5, cursor: "pointer" }}>
             <FileText size={15} /> ATS .txt
           </button>
-          <button type="button" onClick={() => exportResumeToDocx(resume)} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", color: "#1e3a5f", border: "1px solid #1e3a5f", borderRadius: 7, padding: "9px 14px", fontSize: 13.5, cursor: "pointer" }}>
+          <button type="button" onClick={() => exportResumeToDocx(resume, categoryId, layoutId)} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", color: "#1e3a5f", border: "1px solid #1e3a5f", borderRadius: 7, padding: "9px 14px", fontSize: 13.5, cursor: "pointer" }}>
             <FileType size={15} /> Word (.docx)
           </button>
           <button type="button" onClick={handlePrint} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", color: "#1e3a5f", border: "1px solid #1e3a5f", borderRadius: 7, padding: "9px 14px", fontSize: 13.5, cursor: "pointer" }}>
@@ -111,7 +111,7 @@ export function PreviewTab({
       <div className={showAtsText ? "rb-preview-split" : ""} style={{ display: showAtsText ? "grid" : "block", gridTemplateColumns: showAtsText ? "1fr 1fr" : undefined, gap: 18, alignItems: "start" }}>
         <div style={{ maxWidth: showAtsText ? "none" : (pageSize === "a4" ? 698 : 720), margin: showAtsText ? 0 : "0 auto", position: "relative" }}>
           <div className="print-only-preview" style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.12)", border: "1px solid #e5e7eb" }} ref={previewMeasureRef}>
-            <ResumePreview resume={resume} layoutId={layoutId} theme={colorId} font={fontId} documentStyle={documentStyle} showPageBreaks={showPageBreaksToggle} />
+            <ResumePreview resume={resume} layoutId={layoutId} theme={colorId} font={fontId} documentStyle={documentStyle} categoryId={categoryId} showPageBreaks={showPageBreaksToggle} />
           </div>
           {!showAtsText && pageBreaks.map((h, i) => (
             <div key={i} className="no-print" style={{ position: "absolute", left: 0, right: 0, top: h, borderTop: "2px dashed #b0392f", pointerEvents: "none" }}>

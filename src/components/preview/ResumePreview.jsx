@@ -1,5 +1,7 @@
 import React from "react";
 import { THEMES, FONTS } from "../../constants/templatesData";
+import { getCategoryFieldContent } from "../../constants/categoryExamples";
+import { getEffectiveSectionOrder } from "../../utils/sectionOrder";
 
 export function ResumePreview({
   resume,
@@ -7,13 +9,18 @@ export function ResumePreview({
   theme,
   font,
   documentStyle,
-  fontSize = 12.5,
-  lineHeight = 1.5,
-  sectionSpacing = 14,
+  categoryId = "general",
+  fontSize: requestedFontSize = 12.5,
+  lineHeight: requestedLineHeight = 1.5,
+  sectionSpacing: requestedSectionSpacing = 14,
   showPageBreaks = false
 }) {
   const t = THEMES[theme] || THEMES.slate;
   const f = FONTS[font] || FONTS.sans;
+  const fields = getCategoryFieldContent(categoryId);
+  const fontSize = layoutId === "compact" ? Math.max(10, Number(requestedFontSize) - 0.75) : Number(requestedFontSize);
+  const lineHeight = layoutId === "compact" ? Math.max(1.2, Number(requestedLineHeight) - 0.12) : Number(requestedLineHeight);
+  const sectionSpacing = layoutId === "compact" ? Math.max(4, Number(requestedSectionSpacing) - 5) : Number(requestedSectionSpacing);
   const headerStyle = { fontFamily: f.heading, color: t.text };
   const bodyStyle = {
     fontFamily: f.body,
@@ -32,6 +39,17 @@ export function ResumePreview({
   const dobLine = documentStyle === "intl" && resume.dob ? (
     <div style={{ fontSize: Number(fontSize) * 0.9, color: "#6b7280" }}>Date of birth: {resume.dob}</div>
   ) : null;
+  const detailValues = [
+    resume.profileDetails?.specialization,
+    resume.profileDetails?.experienceLevel,
+    resume.profileDetails?.availability,
+    resume.profileDetails?.additional
+  ].filter(Boolean);
+  const profileDetailsLine = detailValues.length ? (
+    <div style={{ fontSize: Number(fontSize) * 0.88, color: "#4b5563", marginTop: 3 }}>
+      {detailValues.join(" | ")}
+    </div>
+  ) : null;
 
   const SectionTitle = ({ children }) => (
     <div className="rb-section-title" style={{
@@ -40,7 +58,9 @@ export function ResumePreview({
       fontSize: Number(fontSize) * 1.02,
       color: t.accent,
       letterSpacing: 0.3,
-      borderBottom: `1.5px solid ${t.accent}`,
+      borderBottom: layoutId === "portfolio" ? "none" : `1.5px solid ${t.accent}`,
+      background: layoutId === "portfolio" ? t.accentSoft : "transparent",
+      paddingLeft: layoutId === "portfolio" ? 6 : 0,
       paddingBottom: 3,
       marginTop: Number(sectionSpacing),
       marginBottom: 8
@@ -59,6 +79,7 @@ export function ResumePreview({
             {[resume.email, resume.phone, resume.location, resume.links].filter(Boolean).join(" · ")}
           </div>
           {dobLine}
+          {profileDetailsLine}
         </div>
       );
     }
@@ -74,6 +95,7 @@ export function ResumePreview({
               {[resume.email, resume.phone, resume.location, resume.links].filter(Boolean).join(" · ")}
             </div>
             {dobLine}
+            {profileDetailsLine}
           </div>
         </div>
       );
@@ -89,6 +111,7 @@ export function ResumePreview({
               {[resume.email, resume.phone, resume.location, resume.links].filter(Boolean).join(" · ")}
             </div>
             {dobLine}
+            {profileDetailsLine}
           </div>
           {photoImg}
         </div>
@@ -105,6 +128,7 @@ export function ResumePreview({
           {[resume.email, resume.phone, resume.location, resume.links].filter(Boolean).join(" · ")}
         </div>
         {dobLine}
+        {profileDetailsLine}
       </div>
     );
   };
@@ -251,59 +275,56 @@ export function ResumePreview({
     );
   };
 
-  const sectionOrder = resume.sectionOrder || [
-    "summary", "experience", "projects", "education", "skills",
-    "certifications", "publications", "languages", "references"
-  ];
+  const sectionOrder = getEffectiveSectionOrder(resume.sectionOrder, layoutId);
 
   const renderSectionByKey = (key) => {
     switch (key) {
       case "summary":
         return resume.summary ? (
           <React.Fragment key="summary">
-            <SectionTitle>Summary</SectionTitle>
+            <SectionTitle>{fields.summaryTitle}</SectionTitle>
             <div>{resume.summary}</div>
           </React.Fragment>
         ) : null;
       case "experience":
         return (resume.experience && resume.experience.length) ? (
           <React.Fragment key="experience">
-            <SectionTitle>Experience</SectionTitle>
+            <SectionTitle>{fields.experienceTitle}</SectionTitle>
             <ExperienceBlock />
           </React.Fragment>
         ) : null;
       case "projects":
         return resume.projects ? (
           <React.Fragment key="projects">
-            <SectionTitle>Projects</SectionTitle>
+            <SectionTitle>{fields.projectsTitle}</SectionTitle>
             <ProjectsBlock />
           </React.Fragment>
         ) : null;
       case "education":
         return (resume.education && resume.education.length) ? (
           <React.Fragment key="education">
-            <SectionTitle>Education</SectionTitle>
+            <SectionTitle>{fields.educationTitle}</SectionTitle>
             <EducationBlock />
           </React.Fragment>
         ) : null;
       case "skills":
         return resume.skills ? (
           <React.Fragment key="skills">
-            <SectionTitle>Skills</SectionTitle>
+            <SectionTitle>{fields.skillsTitle}</SectionTitle>
             <SkillsBlock />
           </React.Fragment>
         ) : null;
       case "publications":
         return resume.publications ? (
           <React.Fragment key="publications">
-            <SectionTitle>Publications & Grants</SectionTitle>
+            <SectionTitle>{fields.publicationsTitle}</SectionTitle>
             <PublicationsBlock />
           </React.Fragment>
         ) : null;
       case "certifications":
         return resume.certifications ? (
           <React.Fragment key="certifications">
-            <SectionTitle>Certifications</SectionTitle>
+            <SectionTitle>{fields.certificationsTitle}</SectionTitle>
             <CertificationsBlock />
           </React.Fragment>
         ) : null;
@@ -363,19 +384,20 @@ export function ResumePreview({
           <SectionTitle>Contact</SectionTitle>
           <div style={{ fontSize: Number(fontSize) * 0.92 }}>{resume.email}<br />{resume.phone}<br />{resume.location}<br />{resume.links}</div>
           {dobLine}
-          <SectionTitle>Skills</SectionTitle>
+          {profileDetailsLine}
+          <SectionTitle>{fields.skillsTitle}</SectionTitle>
           <div style={{ fontSize: Number(fontSize) * 0.92 }}>{(resume.skills || "").split(",").map((s, i) => <div key={i} style={{ marginBottom: 2 }}>{s.trim()}</div>)}</div>
           {resume.languages && <><SectionTitle>Languages</SectionTitle><LanguagesBlock /></>}
         </div>
         <div style={{ width: "68%", padding: "20px 18px" }}>
-          {sectionOrder.map(renderSectionByKey)}
+          {sectionOrder.filter(key => key !== "skills" && key !== "languages").map(renderSectionByKey)}
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ ...bodyStyle, background: "#fff", padding: "24px 26px" }}>
+    <div style={{ ...bodyStyle, background: "#fff", padding: layoutId === "compact" ? "18px 22px" : "24px 26px" }}>
       {showPageBreaks && <><PageBreakGuide top={1056} pageNum={1} /><PageBreakGuide top={2112} pageNum={2} /></>}
       <HeaderBlock isExecutive={layoutId === "executive"} />
       {layoutId === "executive" && <div style={{ borderTop: `2px solid ${t.accent}`, margin: "10px 0" }} />}

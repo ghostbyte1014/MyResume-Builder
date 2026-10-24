@@ -1,5 +1,14 @@
 export const FAQ_KNOWLEDGE_BASE = [
   {
+    id: "reset-resume",
+    question: "How do I reset the builder for another resume or user?",
+    category: "Drafts & Reset",
+    keywords: ["reset", "clear", "cache", "cached", "new", "resume", "another", "user", "mock", "sample", "start over", "draft"],
+    answer: "Click Reset in the top navigation and confirm the warning. Reset removes the active auto-saved draft and unsaved edits, then loads the default General mock resume so the builder is ready to use again. Saved Versions and files you previously exported are not deleted. To start from a different field, choose its template and click 'Use this example data'.",
+    actionLabel: "Reset to General Mock Resume",
+    actionModal: "reset"
+  },
+  {
     id: "export-formats",
     question: "How do I export my resume to Word (.docx) or PDF?",
     category: "Exporting & Download",

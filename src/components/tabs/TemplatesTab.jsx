@@ -1,11 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { CATEGORIES, LAYOUTS, THEMES } from "../../constants/templatesData";
 import { Sliders } from "lucide-react";
 import { TabInfoBanner } from "../common/TabInfoBanner";
+import { createCategorySample } from "../../constants/resumeSamples";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 
 export function TemplatesTab({
   documentStyle, pickDocumentStyle,
   categoryId, pickCategory,
+  setResume,
   layoutId, setLayoutId,
   colorId, setColorId,
   fontId, setFontId,
@@ -13,11 +16,24 @@ export function TemplatesTab({
   lineHeight, setLineHeight,
   sectionSpacing, setSectionSpacing
 }) {
+  const selectedCategory = CATEGORIES.find(category => category.id === categoryId) || CATEGORIES[0];
+  const selectedSample = createCategorySample(selectedCategory.id);
+  const [isSampleConfirmOpen, setIsSampleConfirmOpen] = useState(false);
+
+  function loadSelectedSample() {
+    setIsSampleConfirmOpen(true);
+  }
+
+  function confirmLoadSelectedSample() {
+    setResume(createCategorySample(selectedCategory.id));
+    setIsSampleConfirmOpen(false);
+  }
+
   return (
     <div>
       <TabInfoBanner
         title="Templates Purpose"
-        description="Select document styles (US Resume vs International CV), job category presets, visual layouts, color themes, font families, and precise element spacing."
+        description="Select a document style, resume field, visual layout, color theme, font family, and precise element spacing."
       />
       <h3 style={{ marginTop: 0, fontSize: 15 }}>1. Resume or CV?</h3>
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -36,7 +52,8 @@ export function TemplatesTab({
         This is general guidance, not legal advice — norms vary by country and even by employer. In the US, UK, and Canada, including a photo or birth date is unusual and can actually work against you under anti-discrimination hiring practices.
       </p>
 
-      <h3 style={{ fontSize: 15 }}>2. Pick your field</h3>
+      <h3 style={{ fontSize: 15 }}>2. Choose your resume field</h3>
+      <p style={{ fontSize: 11.5, color: "#6b7280", margin: "-6px 0 10px" }}>This adapts the builder's labels and examples to your work. Choose General if none of the specialist options fit.</p>
       <div className="rb-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
         {CATEGORIES.map(c => (
           <button key={c.id} type="button" onClick={() => pickCategory(c.id)} aria-pressed={categoryId === c.id}
@@ -46,9 +63,27 @@ export function TemplatesTab({
               background: categoryId === c.id ? THEMES[c.color].accentSoft : "#fff",
               fontSize: 13
             }}>
-            {c.label}
+            <div style={{ fontWeight: 600 }}>{c.label}</div>
+            <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 3, lineHeight: 1.35 }}>{c.description}</div>
+            <div style={{ fontSize: 11, color: THEMES[c.color].accent, marginTop: 5, fontWeight: 500 }}>Example: {createCategorySample(c.id).title}</div>
           </button>
         ))}
+      </div>
+
+      <div style={{ border: `1px solid ${THEMES[selectedCategory.color].accent}`, background: THEMES[selectedCategory.color].accentSoft, borderRadius: 8, padding: 12, marginTop: -10, marginBottom: 20 }}>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: THEMES[selectedCategory.color].accent, textTransform: "uppercase", letterSpacing: 0.4 }}>Selected field example</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2937", marginTop: 4 }}>{selectedSample.name} — {selectedSample.title}</div>
+        <div style={{ fontSize: 11.5, color: "#4b5563", lineHeight: 1.45, marginTop: 4 }}>{selectedSample.summary}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+          {(selectedSample.skills || "").split(",").slice(0, 4).map(skill => (
+            <span key={skill} style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 999, padding: "2px 7px", fontSize: 10.5, color: "#475569" }}>{skill.trim()}</span>
+          ))}
+        </div>
+        <button type="button" onClick={loadSelectedSample}
+          style={{ marginTop: 10, padding: "7px 11px", border: "none", borderRadius: 6, background: THEMES[selectedCategory.color].accent, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+          Use this example data
+        </button>
+        <div style={{ fontSize: 10.5, color: "#64748b", marginTop: 5 }}>This is optional and will ask before replacing your current draft.</div>
       </div>
 
       <h3 style={{ fontSize: 15 }}>3. Choose a layout</h3>
@@ -121,6 +156,15 @@ export function TemplatesTab({
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={isSampleConfirmOpen}
+        title={`Load the ${selectedCategory.label} example?`}
+        description="This will replace the current draft content with the selected field's mock resume. Saved versions and exported backup files will not be deleted."
+        confirmLabel="Load example"
+        tone="primary"
+        onConfirm={confirmLoadSelectedSample}
+        onCancel={() => setIsSampleConfirmOpen(false)}
+      />
     </div>
   );
 }

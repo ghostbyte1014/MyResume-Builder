@@ -1,4 +1,5 @@
 import { STOPWORDS } from "../constants/dictionary.js";
+import { createCategorySample } from "../constants/resumeSamples.js";
 
 export const DEFAULT_SECTION_ORDER = [
   "summary", "experience", "projects", "education", "skills",
@@ -10,47 +11,14 @@ export function blankResume() {
     name: "", title: "", email: "", phone: "", location: "", links: "",
     summary: "", experience: [], education: [], skills: "", projects: "",
     publications: "", certifications: "", languages: "", references: "", photo: "",
+    profileDetails: { specialization: "", experienceLevel: "", availability: "", additional: "" },
     photoPosition: { x: 50, y: 50 }, photoAlign: "center", dob: "",
     sectionOrder: [...DEFAULT_SECTION_ORDER]
   };
 }
 
 export function emptyResume() {
-  return {
-    name: "John Doe",
-    title: "Senior Product Manager",
-    email: "john.doe@email.com",
-    phone: "(555) 019-2834",
-    location: "Austin, TX",
-    links: "linkedin.com/in/johndoe",
-    summary: "Product manager with 7 years leading cross-functional teams to ship consumer-facing features. Skilled at translating ambiguous problems into shipped roadmaps that move revenue and retention.",
-    experience: [
-      { id: 1, role: "Senior Product Manager", company: "Northwind Software", dates: "2022 - Present", bullets: [
-        { id: 101, text: "Led a team of 8 engineers to launch a redesigned onboarding flow, increasing activation by 24%", included: true },
-        { id: 102, text: "Drove pricing experiment that grew ARPU by $4.20/user across 3 markets", included: true },
-        { id: 103, text: "Managed roadmap for a product line generating $12M in annual revenue", included: true },
-      ] },
-      { id: 2, role: "Product Manager", company: "Fenwick Analytics", dates: "2019 - 2022", bullets: [
-        { id: 201, text: "Built the first self-serve reporting tool, reducing support tickets by 31%", included: true },
-        { id: 202, text: "Coordinated launch across 4 teams and 2 time zones, shipping on schedule", included: true },
-        { id: 203, text: "Improved trial-to-paid conversion by 9 percentage points through onboarding redesign", included: true },
-      ] },
-    ],
-    education: [
-      { id: 1, school: "University of Texas at Austin", degree: "B.S. in Business Administration", dates: "2015 - 2019" },
-    ],
-    skills: "Product strategy, Roadmapping, SQL, A/B testing, Figma, Stakeholder management, Agile/Scrum, Data analysis",
-    projects: "",
-    publications: "",
-    certifications: "",
-    languages: "English (native), Spanish (professional)",
-    references: "",
-    photo: "",
-    photoPosition: { x: 50, y: 50 },
-    photoAlign: "center",
-    dob: "",
-    sectionOrder: [...DEFAULT_SECTION_ORDER]
-  };
+  return createCategorySample("general");
 }
 
 const EXPANDED_SECTION_PATTERNS = {
@@ -447,4 +415,3 @@ export function cleanupMixedLanguagesAndReferences(r) {
 export function tokenize(text) {
   return (text.toLowerCase().match(/[a-z][a-z+#.]{1,}/g) || []).filter(w => !STOPWORDS.has(w) && w.length > 2);
 }
-

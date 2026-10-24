@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Upload, FileText, Palette, ScanSearch, FolderOpen, Eye, Bot, Star, Menu, X } from "lucide-react";
+import { Upload, FileText, Palette, ScanSearch, FolderOpen, Eye, Bot, Star, Menu, X, RotateCcw } from "lucide-react";
 import { ResumeIcon } from "./ResumeIcon";
 
-export function Header({ tab, setTab, isAiLoading = false, onOpenFeedback }) {
+export function Header({ tab, setTab, isAiLoading = false, onResetResume, onOpenFeedback }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const tabs = [
@@ -153,6 +153,25 @@ export function Header({ tab, setTab, isAiLoading = false, onOpenFeedback }) {
               <t.icon size={15} aria-hidden="true" /> {t.label}
             </button>
           ))}
+          {onResetResume && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onResetResume();
+              }}
+              disabled={isAiLoading}
+              title="Restore the default General mock resume"
+              style={{
+                display: "flex", alignItems: "center", gap: 5, padding: "8px 12px", borderRadius: 7,
+                border: "1px solid #64748b", background: "#fff", color: "#334155",
+                fontSize: 13, fontWeight: 600, cursor: isAiLoading ? "not-allowed" : "pointer",
+                opacity: isAiLoading ? 0.5 : 1
+              }}
+            >
+              <RotateCcw size={14} aria-hidden="true" /> Reset
+            </button>
+          )}
           {onOpenFeedback && (
             <button
               type="button"

@@ -52,6 +52,12 @@ export function parseResumeJSON(jsonString) {
         certifications: resumeObj.certifications || "",
         languages: resumeObj.languages || "",
         references: resumeObj.references || "",
+        profileDetails: {
+          specialization: resumeObj.profileDetails?.specialization || "",
+          experienceLevel: resumeObj.profileDetails?.experienceLevel || "",
+          availability: resumeObj.profileDetails?.availability || "",
+          additional: resumeObj.profileDetails?.additional || ""
+        },
         photo: resumeObj.photo || "",
         photoPosition: resumeObj.photoPosition || { x: 50, y: 50 },
         photoAlign: resumeObj.photoAlign || "center",

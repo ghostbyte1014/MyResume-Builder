@@ -1,4 +1,20 @@
 export const CATEGORY_EXAMPLES = {
+  general: {
+    skillsPlaceholder: "e.g. Customer Service, Team Leadership, Microsoft Office, Scheduling, Problem Solving",
+    projectsPlaceholder: "e.g. Process Improvement Initiative\n• Coordinated a new workflow across the team\n• Reduced turnaround time by 20%",
+    certificationsPlaceholder: "e.g. First Aid Certification — Red Cross, 2025",
+    publicationsPlaceholder: "e.g. Article, award, grant, or other relevant achievement",
+    languagesPlaceholder: "e.g. English (Fluent), Tagalog (Native)",
+    referencesPlaceholder: "e.g. Jane Smith\nManager — Example Company\nEmail: jane.smith@example.com | Phone: +63 900 000 0000"
+  },
+  food: {
+    skillsPlaceholder: "e.g. Food Preparation, Line Cooking, HACCP, POS Systems, Guest Service, Inventory Control",
+    projectsPlaceholder: "e.g. Banquet Service for 300 Guests | Hotel Events\n• Coordinated prep and plated service across a 12-person team\n• Completed service on schedule with zero allergen incidents",
+    certificationsPlaceholder: "e.g. Food Handler Certificate / ServSafe Food Protection Manager, 2025",
+    publicationsPlaceholder: "e.g. Employee of the Quarter — Harbour Hotel, 2025",
+    languagesPlaceholder: "e.g. English (Fluent), Tagalog (Native)",
+    referencesPlaceholder: "e.g. Maria Santos\nExecutive Chef — Harbour Hotel\nEmail: maria.santos@example.com | Phone: +63 900 000 0000"
+  },
   tech: {
     skillsPlaceholder: "e.g. JavaScript, React, Node.js, Python, SQL, Git, AWS Cloud",
     projectsPlaceholder: "e.g. E-Commerce Web Portal | React, Node.js\n• Built an online store with product search and payment checkout\n• Improved site load speed by 35% using lazy image loading",
@@ -64,3 +80,125 @@ export const CATEGORY_EXAMPLES = {
     referencesPlaceholder: "e.g. Thomas Miller\nSite Operations Manager — BuildTech Heavy Industries\nEmail: tmiller@buildtech.com | Phone: +1 (555) 654-3210"
   }
 };
+
+const GENERAL_FIELD_CONTENT = {
+  eyebrow: "General / All Industries",
+  intro: "Uses flexible, widely understood fields that work across industries and career stages.",
+  targetTitleLabel: "Target role or job title",
+  linksLabel: "Links (LinkedIn, portfolio, or website)",
+  summaryLabel: "Professional summary or career objective",
+  summaryTitle: "Professional Summary",
+  summaryPlaceholder: "Briefly describe your experience, strongest skills, and the kind of role you are targeting.",
+  experienceTitle: "Work Experience",
+  addExperienceLabel: "Add experience",
+  roleLabel: "Role or job title",
+  companyLabel: "Employer or organization",
+  experienceDatesLabel: "Dates",
+  experienceDatesPlaceholder: "e.g. Mar 2022 - Present",
+  bulletHelp: "Key responsibilities and achievements — use numbers or results where possible",
+  educationTitle: "Education & Training",
+  addEducationLabel: "Add education",
+  degreeLabel: "Qualification, degree, or program",
+  schoolLabel: "School or training provider",
+  educationDatesLabel: "Dates",
+  skillsTitle: "Skills & Competencies",
+  addSkillLabel: "Add skill",
+  projectsTitle: "Projects & Achievements",
+  addProjectLabel: "Add item",
+  projectsHelp: "Optional — include projects, initiatives, volunteer work, or achievements relevant to the role.",
+  publicationsTitle: "Publications, Awards & Grants",
+  addPublicationLabel: "Add item",
+  certificationsTitle: "Certifications, Licences & Courses",
+  addCertificationLabel: "Add credential",
+  detailSectionTitle: "Additional Career Details",
+  specializationLabel: "Area of expertise or specialization",
+  specializationPlaceholder: "e.g. Office administration, customer support, logistics",
+  experienceLevelLabel: "Experience level",
+  experienceLevelPlaceholder: "e.g. Entry level, 5 years, career changer",
+  availabilityLabel: "Availability (optional)",
+  availabilityPlaceholder: "e.g. Available immediately, weekdays, open to relocation",
+  additionalDetailsLabel: "Other relevant information (optional)",
+  additionalDetailsPlaceholder: "e.g. Work authorization, driver's licence, volunteer leadership"
+};
+
+const TRADE_FIELD_CONTENT = {
+  ...GENERAL_FIELD_CONTENT,
+  eyebrow: "Skilled Trades & Operations",
+  intro: "Prioritizes hands-on work, equipment, safety, licences, job sites, and trade training.",
+  targetTitleLabel: "Target trade or position",
+  linksLabel: "Links (LinkedIn, union profile, or portfolio)",
+  summaryLabel: "Trade profile / summary of qualifications",
+  summaryTitle: "Summary of Qualifications",
+  summaryPlaceholder: "State your trade, years of experience, licences or tickets, equipment expertise, and strongest safety or productivity result.",
+  experienceTitle: "Trade & Operations Experience",
+  addExperienceLabel: "Add job",
+  roleLabel: "Trade or position",
+  companyLabel: "Employer, contractor, or client",
+  experienceDatesLabel: "Dates / contract period",
+  experienceDatesPlaceholder: "e.g. Mar 2022 - Present or 6-month shutdown contract",
+  bulletHelp: "Work performed, equipment used, job-site scope, safety record, and measurable results",
+  educationTitle: "Trade Education & Apprenticeship",
+  addEducationLabel: "Add training",
+  degreeLabel: "Trade qualification, apprenticeship, or program",
+  schoolLabel: "Technical school, training provider, or union",
+  skillsTitle: "Tools, Equipment & Core Skills",
+  projectsTitle: "Selected Jobs & Projects",
+  addProjectLabel: "Add job/project",
+  projectsHelp: "Optional — highlight major installations, shutdowns, builds, maintenance programs, or operational improvements.",
+  publicationsTitle: "Awards & Industry Recognition",
+  certificationsTitle: "Licences, Tickets & Safety Training",
+  addCertificationLabel: "Add licence/ticket",
+  detailSectionTitle: "Trade & Work Details",
+  specializationLabel: "Primary trade or specialization",
+  specializationPlaceholder: "e.g. Industrial electrician, CNC machinist, warehouse operations",
+  experienceLevelLabel: "Years of hands-on experience",
+  experienceLevelPlaceholder: "e.g. 8 years or 3rd-year apprentice",
+  availabilityLabel: "Shift, travel, or site availability (optional)",
+  availabilityPlaceholder: "e.g. Rotating shifts, shutdown travel, available for FIFO",
+  additionalDetailsLabel: "Other trade details (optional)",
+  additionalDetailsPlaceholder: "e.g. Class 3 licence, union member, confined-space cleared"
+};
+
+const FOOD_FIELD_CONTENT = {
+  ...GENERAL_FIELD_CONTENT,
+  eyebrow: "Food Service & Hospitality",
+  intro: "Highlights culinary or guest-service experience, food safety, venues, service volume, and shift readiness.",
+  targetTitleLabel: "Target food or hospitality role",
+  linksLabel: "Links (LinkedIn, culinary portfolio, or venue profile)",
+  summaryLabel: "Food service / hospitality profile",
+  summaryTitle: "Professional Profile",
+  summaryPlaceholder: "State your role, years of experience, service style or cuisine, food-safety credentials, and strongest quality or guest-service result.",
+  experienceTitle: "Food Service & Hospitality Experience",
+  addExperienceLabel: "Add role",
+  roleLabel: "Position",
+  companyLabel: "Restaurant, hotel, caterer, or employer",
+  experienceDatesLabel: "Dates / season",
+  experienceDatesPlaceholder: "e.g. Mar 2022 - Present or Holiday season 2025",
+  bulletHelp: "Food or guest service delivered, covers or volume handled, standards followed, teamwork, and measurable results",
+  educationTitle: "Culinary & Hospitality Education",
+  addEducationLabel: "Add training",
+  degreeLabel: "Qualification, apprenticeship, or program",
+  schoolLabel: "Culinary school or training provider",
+  skillsTitle: "Culinary, Service & Operations Skills",
+  projectsTitle: "Menus, Events & Service Highlights",
+  addProjectLabel: "Add highlight",
+  projectsHelp: "Optional — include menu launches, banquets, catering events, peak-volume service, or guest-experience improvements.",
+  publicationsTitle: "Awards & Hospitality Recognition",
+  certificationsTitle: "Food Safety & Service Certifications",
+  addCertificationLabel: "Add certificate",
+  detailSectionTitle: "Food & Hospitality Work Details",
+  specializationLabel: "Culinary or service specialty",
+  specializationPlaceholder: "e.g. Pastry, hot line, banquet service, barista, front desk",
+  experienceLevelLabel: "Years of industry experience",
+  experienceLevelPlaceholder: "e.g. 4 years or recent culinary graduate",
+  availabilityLabel: "Shift and schedule availability (optional)",
+  availabilityPlaceholder: "e.g. Evenings, weekends, holidays, opening shifts",
+  additionalDetailsLabel: "Other relevant details (optional)",
+  additionalDetailsPlaceholder: "e.g. Allergen-trained, driver's licence, able to lift 25 kg"
+};
+
+export function getCategoryFieldContent(categoryId) {
+  if (categoryId === "trades") return TRADE_FIELD_CONTENT;
+  if (categoryId === "food") return FOOD_FIELD_CONTENT;
+  return GENERAL_FIELD_CONTENT;
+}

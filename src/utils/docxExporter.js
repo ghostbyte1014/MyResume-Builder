@@ -1,3 +1,6 @@
+import { getCategoryFieldContent } from "../constants/categoryExamples";
+import { getEffectiveSectionOrder } from "./sectionOrder";
+
 /** Escape HTML special characters so user-entered text is safe inside the Word HTML document. */
 function esc(str) {
   if (!str) return "";
@@ -9,10 +12,13 @@ function esc(str) {
     .replace(/'/g, "&#39;");
 }
 
-export function exportResumeToDocx(resume) {
+export function exportResumeToDocx(resume, categoryId = "general", layoutId = "classic") {
+  const fields = getCategoryFieldContent(categoryId);
   const name = esc(resume.name || "Resume");
   const title = esc(resume.title || "");
   const contactInfo = [resume.email, resume.phone, resume.location, resume.links]
+    .filter(Boolean).map(esc).join(" | ");
+  const profileInfo = Object.values(resume.profileDetails || {})
     .filter(Boolean).map(esc).join(" | ");
 
   const formatList = (str) => {
@@ -85,10 +91,7 @@ export function exportResumeToDocx(resume) {
       .join("");
   };
 
-  const sectionOrder = resume.sectionOrder || [
-    "summary", "experience", "projects", "education", "skills",
-    "certifications", "publications", "languages", "references"
-  ];
+  const sectionOrder = getEffectiveSectionOrder(resume.sectionOrder, layoutId);
 
   let bodyHtml = "";
 
@@ -97,7 +100,7 @@ export function exportResumeToDocx(resume) {
       case "summary":
         if (resume.summary) {
           bodyHtml += `
-            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">PROFESSIONAL SUMMARY</h2>
+            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">${esc(fields.summaryTitle).toUpperCase()}</h2>
             <p style="margin-top: 0pt; margin-bottom: 8pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 8pt; line-height: 1.25;">${resume.summary}</p>
           `;
         }
@@ -105,7 +108,7 @@ export function exportResumeToDocx(resume) {
       case "experience":
         if (resume.experience && resume.experience.length) {
           bodyHtml += `
-            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">WORK EXPERIENCE</h2>
+            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">${esc(fields.experienceTitle).toUpperCase()}</h2>
             ${formatExperience(resume.experience)}
           `;
         }
@@ -113,7 +116,7 @@ export function exportResumeToDocx(resume) {
       case "projects":
         if (resume.projects) {
           bodyHtml += `
-            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">PROJECTS</h2>
+            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">${esc(fields.projectsTitle).toUpperCase()}</h2>
             ${formatProjects(resume.projects)}
           `;
         }
@@ -121,7 +124,7 @@ export function exportResumeToDocx(resume) {
       case "education":
         if (resume.education && resume.education.length) {
           bodyHtml += `
-            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">EDUCATION</h2>
+            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">${esc(fields.educationTitle).toUpperCase()}</h2>
             ${formatEducation(resume.education)}
           `;
         }
@@ -129,7 +132,7 @@ export function exportResumeToDocx(resume) {
       case "skills":
         if (resume.skills) {
           bodyHtml += `
-            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">SKILLS & COMPETENCIES</h2>
+            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">${esc(fields.skillsTitle).toUpperCase()}</h2>
             ${formatList(resume.skills)}
           `;
         }
@@ -137,7 +140,7 @@ export function exportResumeToDocx(resume) {
       case "certifications":
         if (resume.certifications) {
           bodyHtml += `
-            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">CERTIFICATIONS & CREDENTIALS</h2>
+            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">${esc(fields.certificationsTitle).toUpperCase()}</h2>
             ${formatList(resume.certifications)}
           `;
         }
@@ -145,7 +148,7 @@ export function exportResumeToDocx(resume) {
       case "publications":
         if (resume.publications) {
           bodyHtml += `
-            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">PUBLICATIONS & RESEARCH</h2>
+            <h2 style="color: #1e3a5f; border-bottom: 1.5pt solid #1e3a5f; font-size: 12.5pt; margin-top: 10pt; margin-bottom: 4pt; padding-bottom: 2pt;">${esc(fields.publicationsTitle).toUpperCase()}</h2>
             ${formatList(resume.publications)}
           `;
         }
@@ -237,6 +240,12 @@ export function exportResumeToDocx(resume) {
           border-bottom: 1px solid #d1d5db;
           padding-bottom: 4pt;
         }
+        .profile-details {
+          font-size: 9.5pt;
+          color: #4b5563;
+          margin-top: 0pt;
+          margin-bottom: 6pt;
+        }
         h2 {
           color: #1e3a5f;
           border-bottom: 1.5pt solid #1e3a5f;
@@ -265,6 +274,7 @@ export function exportResumeToDocx(resume) {
       <h1>${name}</h1>
       ${title ? `<div class="subtitle">${title}</div>` : ""}
       ${contactInfo ? `<div class="contact">${contactInfo}</div>` : ""}
+      ${profileInfo ? `<div class="profile-details">${profileInfo}</div>` : ""}
       ${bodyHtml}
     </body>
     </html>

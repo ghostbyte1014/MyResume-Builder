@@ -1,12 +1,14 @@
 export const CATEGORIES = [
-  { id: "tech", label: "Technology & Engineering", layout: "classic", color: "slate", font: "sans" },
-  { id: "business", label: "Business, Finance & Consulting", layout: "executive", color: "navy", font: "serifSans" },
-  { id: "creative", label: "Creative, Design & Media", layout: "sidebar", color: "terracotta", font: "sansSerif" },
-  { id: "healthcare", label: "Healthcare & Clinical", layout: "classic", color: "teal", font: "sans" },
-  { id: "academic", label: "Academic, Research & Education", layout: "academic", color: "charcoal", font: "serifSans" },
-  { id: "legal", label: "Legal & Government", layout: "executive", color: "charcoal", font: "serifSans" },
-  { id: "sales", label: "Sales & Marketing", layout: "sidebar", color: "burgundy", font: "sans" },
-  { id: "trades", label: "Skilled Trades & Operations", layout: "classic", color: "forest", font: "sans" },
+  { id: "general", label: "General / All Industries", description: "Flexible wording for any role or career stage.", layout: "classic", color: "slate", font: "sans" },
+  { id: "trades", label: "Skilled Trades & Operations", description: "Highlights hands-on experience, tools, safety, licences, and training.", layout: "compact", color: "forest", font: "sans" },
+  { id: "food", label: "Food Service & Hospitality", description: "For culinary, restaurant, catering, hotel, and guest-service roles.", layout: "executive", color: "bronze", font: "serifSans" },
+  { id: "tech", label: "Technology & Engineering", description: "For software, data, IT, and engineering roles.", layout: "portfolio", color: "slate", font: "sans" },
+  { id: "business", label: "Business, Finance & Consulting", description: "For commercial, finance, strategy, and management roles.", layout: "executive", color: "navy", font: "serifSans" },
+  { id: "creative", label: "Creative, Design & Media", description: "For portfolio-led creative and media roles.", layout: "sidebar", color: "terracotta", font: "sansSerif" },
+  { id: "healthcare", label: "Healthcare & Clinical", description: "For patient care, clinical, and health-service roles.", layout: "classic", color: "teal", font: "sans" },
+  { id: "academic", label: "Academic, Research & Education", description: "For teaching, research, grants, and publications.", layout: "academic", color: "charcoal", font: "serifSans" },
+  { id: "legal", label: "Legal & Government", description: "For legal, policy, compliance, and public-sector roles.", layout: "executive", color: "charcoal", font: "serifSans" },
+  { id: "sales", label: "Sales & Marketing", description: "For revenue, growth, communications, and marketing roles.", layout: "sidebar", color: "burgundy", font: "sans" },
 ];
 
 export const LAYOUTS = [

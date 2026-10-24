@@ -3,7 +3,7 @@ import { MessageSquare, X, Search, Send, ArrowRight, Bot, HelpCircle, CheckCircl
 import { FAQ_KNOWLEDGE_BASE } from "../../constants/faqKnowledgeBase";
 import { matchFaqQuery } from "../../utils/faqMatcher";
 
-export function FaqWidget({ setTab, onOpenActivation, onOpenFeedback }) {
+export function FaqWidget({ setTab, onResetResume, onOpenActivation, onOpenFeedback }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [chatHistory, setChatHistory] = useState([
@@ -77,6 +77,9 @@ export function FaqWidget({ setTab, onOpenActivation, onOpenFeedback }) {
     } else if (actionModal === "feedback" && onOpenFeedback) {
       onOpenFeedback();
       setIsOpen(false);
+    } else if (actionModal === "reset" && onResetResume) {
+      const didReset = onResetResume();
+      if (didReset) setIsOpen(false);
     }
   }
 
